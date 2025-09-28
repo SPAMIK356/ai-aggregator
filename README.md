@@ -101,7 +101,7 @@ print(run_parser())
 PY
 ```
 
-### Telegram‑каналы вместо RSS
+### Telegram‑каналы
 1) Получите API‑ключи Telegram: `https://my.telegram.org` (App api_id/api_hash)
 2) Сгенерируйте `TG_STRING_SESSION`:
 ```powershell
