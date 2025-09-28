@@ -11,4 +11,5 @@ requests==2.32.3
 pytz==2024.1
 telethon==1.36.0
 beautifulsoup4==4.12.3
+whitenoise==6.7.0
 

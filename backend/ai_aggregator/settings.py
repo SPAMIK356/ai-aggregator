@@ -25,8 +25,10 @@ INSTALLED_APPS = [
 	"core.apps.CoreConfig",
 ]
 
+
 MIDDLEWARE = [
 	"django.middleware.security.SecurityMiddleware",
+	"whitenoise.middleware.WhiteNoiseMiddleware",
 	"django.contrib.sessions.middleware.SessionMiddleware",
 	"corsheaders.middleware.CorsMiddleware",
 	"django.middleware.common.CommonMiddleware",
@@ -90,6 +92,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -101,6 +104,9 @@ REST_FRAMEWORK = {
 # CORS
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "1") == "1"
 CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+
+# CSRF / Hosts for production
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 # Celery / Redis
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")

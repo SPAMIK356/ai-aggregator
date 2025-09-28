@@ -1,0 +1,5 @@
+69e728d53797492b2aadd37c9fa3b04e7c94876e,MODIFY,regular-file,README.md,7906,106;114-115;130-131
+bf9fcd4b3e436beb8713f2137fb11ecc19f605c6,MODIFY,regular-file,backend/ai_aggregator/settings.py,3367,112-113
+25c9413b25f622b0a602846fb1153b13376d44ed,MODIFY,regular-file,backend/core/management/commands/generate_tg_string_session.py,934,12;19;23;25
+2e3fc5906f2984628660635ec00de7fe536a0264,MODIFY,regular-file,backend/core/tasks.py,6274,102-103;109-110
+eae328d0d9b1750249baf84ad68592e00702c869,MODIFY,regular-file,docker-compose.yml,3744,68-69;97-98
