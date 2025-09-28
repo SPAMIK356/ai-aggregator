@@ -22,6 +22,9 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
+      TG_API_ID: ${TG_API_ID:-}
+      TG_API_HASH: ${TG_API_HASH:-}
+      TG_STRING_SESSION: ${TG_STRING_SESSION:-}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key}
       DEBUG: ${DEBUG:-1}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
