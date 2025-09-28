@@ -15,7 +15,8 @@ from .models import TelegramChannel, WebsiteSource
 from bs4 import BeautifulSoup
 
 try:
-	from telethon import TelegramClient
+	# Use synchronous helpers to avoid awaiting coroutines in Celery task
+	from telethon.sync import TelegramClient
 	from telethon.sessions import StringSession
 except Exception:  # optional at import time
 	TelegramClient = None
@@ -114,26 +115,19 @@ def fetch_telegram_channels() -> dict:
 	created = 0
 	skipped = 0
 	client = TelegramClient(StringSession(string_session), int(api_id), str(api_hash))
-	client.connect()
-	try:
+	# Use context manager to connect/disconnect synchronously
+	with client:
 		for ch in TelegramChannel.objects.filter(is_active=True):
 			try:
 				entity = ch.username if ch.username.startswith("@") else f"@{ch.username}"
 				offset_id = ch.last_message_id or 0
-				# Fetch latest 50 messages newer than last_message_id
-				messages = client.iter_messages(entity, limit=50)
+				# Fetch latest messages (newest first), then process oldest->newest
+				msgs = list(client.iter_messages(entity, limit=50))
 				max_id = ch.last_message_id or 0
-				async def _collect():
-					collected = []
-					async for m in messages:
-						if m.id and m.id <= offset_id:
-							break
-						collected.append(m)
-					return list(reversed(collected))  # oldest first
-				# Run the async generator in sync context
-				collected = client.loop.run_until_complete(_collect())
-				for m in collected:
-					text = (m.text or m.message or "").strip()
+				for m in reversed(msgs):
+					if m.id and m.id <= offset_id:
+						continue
+					text = (getattr(m, "text", None) or getattr(m, "message", None) or "").strip()
 					if not text:
 						skipped += 1
 						continue
@@ -157,8 +151,6 @@ def fetch_telegram_channels() -> dict:
 					ch.save(update_fields=["last_message_id", "updated_at"])
 			except Exception:
 				skipped += 1
-	finally:
-		client.disconnect()
 	return {"created": created, "skipped": skipped}
 
 
