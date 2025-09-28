@@ -21,7 +21,7 @@ type ColumnItem = {
 };
 
 export default async function HomePage() {
-  const api = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api';
+  const api = process.env.NEXT_PUBLIC_API_BASE || '/api';
   const [newsData, columnsData] = await Promise.all([
     fetchJson<{ results: NewsItem[] }>(`${api}/news/?page=1`),
     fetchJson<{ results: ColumnItem[] }>(`${api}/columns/?page=1`),

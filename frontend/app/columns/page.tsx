@@ -5,7 +5,7 @@ async function fetchJson(url: string) {
 }
 
 export default async function ColumnsListPage({ searchParams }: { searchParams: { page?: string } }) {
-  const api = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api';
+  const api = process.env.NEXT_PUBLIC_API_BASE || '/api';
   const page = Number(searchParams?.page || 1);
   const data = await fetchJson(`${api}/columns/?page=${page}`);
 

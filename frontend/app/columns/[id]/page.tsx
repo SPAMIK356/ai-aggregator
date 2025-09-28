@@ -13,7 +13,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export default async function ColumnDetailPage({ params }: { params: { id: string } }) {
-  const api = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api';
+  const api = process.env.NEXT_PUBLIC_API_BASE || '/api';
   const data = await fetchJson<ColumnDetail>(`${api}/columns/${params.id}/`);
   return (
     <article className="prose">
