@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass
+from typing import Dict
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from .models import AuthorColumn, NewsItem, OutboxEvent
+
+
+@dataclass
+class CreatedEvent:
+	post_type: str
+	title: str
+	link: str
+
+	def to_payload(self) -> Dict[str, str]:
+		return asdict(self)
+
+
+def enqueue_outbox(event_type: str, payload: Dict) -> None:
+	OutboxEvent.objects.create(event_type=event_type, payload=payload)
+
+
+@receiver(post_save, sender=NewsItem)
+def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
+	if not created:
+		return
+	payload = CreatedEvent(
+		post_type="news",
+		title=instance.title,
+		link=instance.original_url,
+	).to_payload()
+	enqueue_outbox(OutboxEvent.EVENT_NEWS_CREATED, payload)
+
+
+@receiver(post_save, sender=AuthorColumn)
+def on_authorcolumn_created(sender, instance: AuthorColumn, created: bool, **kwargs):
+	if not created:
+		return
+	payload = CreatedEvent(
+		post_type="column",
+		title=instance.title,
+		link=f"/columns/{instance.pk}",
+	).to_payload()
+	enqueue_outbox(OutboxEvent.EVENT_COLUMN_CREATED, payload)
+
+

@@ -1,0 +1,32 @@
+async function fetchJson(url: string) {
+  const res = await fetch(url, { next: { revalidate: 60 } });
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+}
+
+export default async function ColumnsListPage({ searchParams }: { searchParams: { page?: string } }) {
+  const api = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api';
+  const page = Number(searchParams?.page || 1);
+  const data = await fetchJson(`${api}/columns/?page=${page}`);
+
+  return (
+    <div>
+      <h1 className="section-title">Авторские колонки</h1>
+      <div className="cards" style={{ marginTop: 12 }}>
+        {data.results.map((c: any) => (
+          <a key={c.id} href={`/columns/${c.id}`} className="card">
+            <div className="card-title">{c.title}</div>
+            <div className="meta">{c.author_name} · {new Date(c.published_at).toLocaleString('ru-RU')}</div>
+          </a>
+        ))}
+      </div>
+
+      <div className="pagination">
+        {page > 1 && <a className="pill" href={`?page=${page - 1}`}>&larr; Назад</a>}
+        {data.next && <a className="pill" href={`?page=${page + 1}`}>Далее &rarr;</a>}
+      </div>
+    </div>
+  );
+}
+
+

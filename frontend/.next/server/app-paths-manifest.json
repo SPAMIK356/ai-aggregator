@@ -1,0 +1,7 @@
+{
+  "/page": "app/page.js",
+  "/columns/page": "app/columns/page.js",
+  "/news/page": "app/news/page.js",
+  "/contact/page": "app/contact/page.js",
+  "/columns/[id]/page": "app/columns/[id]/page.js"
+}
