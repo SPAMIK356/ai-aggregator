@@ -65,8 +65,8 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
       WEBHOOK_URL: ${WEBHOOK_URL:-}
       TG_API_ID: ${TG_API_ID:24164174}
-      ***: ${***:fa94ee4a3110a01aac18ea2f3233422f}
-      ***: ${***:1AZWarzsBu14_Pk-XtY3-hHvaaV0VFKIY6JnXN721vyQomXWC6elu3OX0TwlZCPo9JfLTQ0zXJph5mxJ6T6xOlc2L7UsY7yeIE09fhNpGGKoefQXVocLbzo0ss3ligTS7hGAm4D_eLzNEeEJuURZrxeEFm1_Jd59Hoai4idFI-kd5TJN1y5b6_Xw1D7gFrwO6P3SXTG8NNJDvE0YNx-0BsvT0O3YHNMBOpjlF-shLr25j1DupIeX8GOQMKs-ZBDiLv7DYspe-WDQKZWtOgPzn-fZjuRz7_7LB8fIhZFzEQBfSItceowt8akJAkRJG_b7ZKeJM-ZRbHufr49mTweHm6SbqvUKBA8c=}
+      TG_API_HASH: ${TG_API_HASH:fa94ee4a3110a01aac18ea2f3233422f}
+      TG_STRING_SESSION: ${TG_STRING_SESSION:1AZWarzsBu14_Pk-XtY3-hHvaaV0VFKIY6JnXN721vyQomXWC6elu3OX0TwlZCPo9JfLTQ0zXJph5mxJ6T6xOlc2L7UsY7yeIE09fhNpGGKoefQXVocLbzo0ss3ligTS7hGAm4D_eLzNEeEJuURZrxeEFm1_Jd59Hoai4idFI-kd5TJN1y5b6_Xw1D7gFrwO6P3SXTG8NNJDvE0YNx-0BsvT0O3YHNMBOpjlF-shLr25j1DupIeX8GOQMKs-ZBDiLv7DYspe-WDQKZWtOgPzn-fZjuRz7_7LB8fIhZFzEQBfSItceowt8akJAkRJG_b7ZKeJM-ZRbHufr49mTweHm6SbqvUKBA8c=}
     volumes:
       - ./backend:/app
     depends_on:
@@ -94,8 +94,8 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
       WEBHOOK_URL: ${WEBHOOK_URL:-}
       TG_API_ID: ${TG_API_ID:-}
-      ***: ${***:-}
-      ***: ${***:-}
+      TG_API_HASH: ${TG_API_HASH:-}
+      TG_STRING_SESSION: ${TG_STRING_SESSION:-}
     volumes:
       - ./backend:/app
     depends_on:

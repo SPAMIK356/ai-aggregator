@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Django
+*.log
+staticfiles/
+media/
+
+# Env / secrets
+.env
+.env.*
+backend/.env
+
+# Virtual envs
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DB
+backend/db.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage / cache
+.coverage
+.pytest_cache/

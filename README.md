@@ -103,7 +103,7 @@ PY
 
 ### Telegram‑каналы вместо RSS
 1) Получите API‑ключи Telegram: `https://my.telegram.org` (App api_id/api_hash)
-2) Сгенерируйте `***`:
+2) Сгенерируйте `TG_STRING_SESSION`:
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" "news aggregator\backend\manage.py" generate_tg_string_session
@@ -111,8 +111,8 @@ $env:USE_SQLITE = "1"
 3) Установите переменные окружения:
 ```powershell
 $env:TG_API_ID = "123456"
-$env:*** = "your_hash"
-$env:*** = "1A..."  # из шага 2
+$env:TG_API_HASH = "your_hash"
+$env:TG_STRING_SESSION = "1A..."  # из шага 2
 ```
 4) Добавьте каналы:
 ```powershell
@@ -127,8 +127,8 @@ import os
 os.environ['DJANGO_SETTINGS_MODULE']='ai_aggregator.settings'
 os.environ['USE_SQLITE']='1'
 os.environ['TG_API_ID']=os.environ.get('TG_API_ID','')
-os.environ['***']=os.environ.get('***','')
-os.environ['***']=os.environ.get('***','')
+os.environ['TG_API_HASH']=os.environ.get('TG_API_HASH','')
+os.environ['TG_STRING_SESSION']=os.environ.get('TG_STRING_SESSION','')
 import django; django.setup()
 from core.tasks import fetch_telegram_channels
 print(fetch_telegram_channels())

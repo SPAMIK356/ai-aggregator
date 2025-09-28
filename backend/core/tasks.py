@@ -99,15 +99,15 @@ def fetch_telegram_channels() -> dict:
 
 	Requires env vars:
 	- TG_API_ID
-	- ***
-	- *** (recommended) or TG_BOT_TOKEN (not used here)
+	- TG_API_HASH
+	- TG_STRING_SESSION (recommended) or TG_BOT_TOKEN (not used here)
 	"""
 	if TelegramClient is None:
 		return {"error": "telethon not installed"}
 
 	api_id = getattr(settings, "TG_API_ID", None)
-	api_hash = getattr(settings, "***", None)
-	string_session = getattr(settings, "***", None)
+	api_hash = getattr(settings, "TG_API_HASH", None)
+	string_session = getattr(settings, "TG_STRING_SESSION", None)
 	if not (api_id and api_hash and string_session):
 		return {"error": "missing TG creds"}
 

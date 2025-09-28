@@ -109,8 +109,8 @@ CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 TG_API_ID = os.getenv("TG_API_ID")
-*** = os.getenv("***")
-*** = os.getenv("***")
+TG_API_HASH = os.getenv("TG_API_HASH")
+TG_STRING_SESSION = os.getenv("TG_STRING_SESSION")
 
 # Celery beat schedule configured in celery.py
 
