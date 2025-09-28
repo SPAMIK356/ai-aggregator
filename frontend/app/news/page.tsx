@@ -5,7 +5,7 @@ async function fetchJson(url: string) {
 }
 
 export default async function NewsListPage({ searchParams }: { searchParams: { page?: string } }) {
-  const api = process.env.NEXT_PUBLIC_API_BASE || '/api';
+  const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
   const page = Number(searchParams?.page || 1);
   const data = await fetchJson(`${api}/news/?page=${page}`);
 
