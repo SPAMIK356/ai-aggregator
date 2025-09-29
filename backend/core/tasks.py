@@ -245,12 +245,15 @@ def fetch_telegram_channels() -> dict:
 										rel = saved_path.relative_to(media_root)
 										media_url = getattr(settings, "MEDIA_URL", "/media/")
 										img_url = f"{media_url}{rel.as_posix()}"
+										logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
 								elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 									# Fallback: no download possible, keep t.me view link
 									img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+									logger.info("TG image fallback to permalink url=%s", img_url)
 							except Exception:
 								# If anything fails, fall back to t.me permalink
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+								logger.exception("TG image download failed; using permalink url=%s", img_url)
 							NewsItem.objects.create(
 								title=(rew.get("title") or orig_title)[:500],
 								original_url=url,
@@ -259,6 +262,7 @@ def fetch_telegram_channels() -> dict:
 								published_at=published_at,
 								source_name=ch.title or ch.username,
 							)
+							logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
 							created += 1
 					except IntegrityError:
 						skipped += 1
