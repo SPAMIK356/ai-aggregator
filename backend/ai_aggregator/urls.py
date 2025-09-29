@@ -15,7 +15,7 @@ urlpatterns = [
 	path("health/", health),
 ]
 
-# Serve MEDIA files in all environments for MVP (containerized deployment)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+	urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
