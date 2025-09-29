@@ -199,6 +199,11 @@ def fetch_telegram_channels() -> dict:
 		for ch in TelegramChannel.objects.filter(is_active=True):
 			try:
 				entity = ch.username if ch.username.startswith("@") else f"@{ch.username}"
+				# Skip invite links or invalid entities
+				if entity.startswith("@http") or "+" in entity:
+					logger.error("TG channel error: Invalid entity '%s'. Use public @username, not invite link.", entity)
+					skipped += 1
+					continue
 				offset_id = ch.last_message_id or 0
 				logger.info("TG channel=%s offset_id=%s", entity, offset_id)
 				# Fetch latest messages (newest first), then process oldest->newest
@@ -215,24 +220,22 @@ def fetch_telegram_channels() -> dict:
 						continue
 					url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}"
 					published_at = _safe_dt(getattr(m, "date", None).timetuple() if getattr(m, "date", None) else None)
-                    try:
-                        with transaction.atomic():
-                            orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
-                            orig_body = (html or escape(raw_text))[:5000]
-                            try:
-                                rew = rewrite_article(orig_title, orig_body)
-                            except Exception:
-                                rew = None
-                            if not rew:
-                                rew = {"title": orig_title, "content": orig_body}
-                    img_url = ""
-                    # Prefer message photo thumb if present; fall back to t.me view link
-                    if getattr(m, "photo", None) and getattr(m.photo, "sizes", None):
-                        # The 'sizes' list may contain thumbs; we cannot get direct CDN without downloading.
-                        # For MVP, still fallback to t.me permalink to let the frontend open original if needed.
-                        img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-                    elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
-                        img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+					try:
+						with transaction.atomic():
+							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
+							orig_body = (html or escape(raw_text))[:5000]
+							try:
+								rew = rewrite_article(orig_title, orig_body)
+							except Exception:
+								rew = None
+							if not rew:
+								rew = {"title": orig_title, "content": orig_body}
+							img_url = ""
+							# Prefer message photo if present; fallback to t.me permalink view
+							if getattr(m, "photo", None):
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+							elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							NewsItem.objects.create(
 								title=(rew.get("title") or orig_title)[:500],
 								original_url=url,
@@ -292,20 +295,20 @@ def fetch_websites() -> dict:
 					skipped += 1
 					logger.info("WEB empty link")
 					continue
-                try:
-                    with transaction.atomic():
-                        try:
-                            rew = rewrite_article(title or link, desc or "")
-                        except Exception:
-                            rew = None
-                        if not rew:
-                            rew = {"title": title or link, "content": desc or ""}
+				try:
+					with transaction.atomic():
+						try:
+							rew = rewrite_article(title or link, desc or "")
+						except Exception:
+							rew = None
+						if not rew:
+							rew = {"title": title or link, "content": desc or ""}
 						img = ""
 						if ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
-							if img_el and img_el.get('src'):
-								img = img_el.get('src')
-								if img.startswith('/'):
+							if img_el and (img_el.get('src') or img_el.get('data-src')):
+								img = img_el.get('src') or img_el.get('data-src')
+								if img and img.startswith('/'):
 									from urllib.parse import urljoin
 									img = urljoin(ws.url, img)
 						NewsItem.objects.create(
