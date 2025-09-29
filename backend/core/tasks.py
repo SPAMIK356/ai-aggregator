@@ -266,22 +266,22 @@ def fetch_websites() -> dict:
 				if not link:
 					skipped += 1
 					continue
-					try:
+				try:
 					with transaction.atomic():
-							rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
-							img = ""
-							if ws.image_selector:
-								img_el = c.select_one(ws.image_selector)
-								if img_el and img_el.get('src'):
-									img = img_el.get('src')
-									if img.startswith('/'):
-										from urllib.parse import urljoin
-										img = urljoin(ws.url, img)
+						rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+						img = ""
+						if ws.image_selector:
+							img_el = c.select_one(ws.image_selector)
+							if img_el and img_el.get('src'):
+								img = img_el.get('src')
+								if img.startswith('/'):
+									from urllib.parse import urljoin
+									img = urljoin(ws.url, img)
 						NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
 							description=(rew.get("content") or desc or "")[:10000],
-								image_url=img,
+							image_url=img,
 							published_at=timezone.now(),
 							source_name=ws.name,
 						)
