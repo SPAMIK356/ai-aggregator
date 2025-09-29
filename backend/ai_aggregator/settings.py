@@ -11,7 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+_env_hosts = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+if "*" in _env_hosts:
+	ALLOWED_HOSTS = ["*"]
+else:
+	# Ensure common local/container hosts are allowed to avoid 400 during tests and dev
+	_common = {"backend", "localhost", "127.0.0.1", "testserver"}
+	ALLOWED_HOSTS = list({*_env_hosts, *_common})
 
 INSTALLED_APPS = [
 	"django.contrib.admin",
