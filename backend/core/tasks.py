@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 
 import feedparser
 from celery import shared_task
+from celery.utils.log import get_task_logger
 import requests
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -16,6 +17,8 @@ from bs4 import BeautifulSoup
 import re
 from html import escape
 from .rewriter import rewrite_article
+logger = get_task_logger(__name__)
+
 try:
 	from telethon.tl.types import (
 		MessageEntityBold,
@@ -106,8 +109,10 @@ def run_parser() -> dict:
 	created = 0
 	skipped = 0
 	for source in NewsSource.objects.filter(is_active=True):
+		logger.info("RSS parse start url=%s", source.url)
 		feed = feedparser.parse(source.url)
 		entries = feed.entries or []
+		logger.info("RSS entries=%d", len(entries))
 		for entry in entries:
 			title = getattr(entry, "title", "").strip()
 			link = getattr(entry, "link", "").strip()
@@ -129,6 +134,8 @@ def run_parser() -> dict:
 					created += 1
 			except IntegrityError:
 				skipped += 1
+				logger.info("RSS duplicate skip url=%s", link)
+	logger.info("RSS done created=%d skipped=%d", created, skipped)
 	return {"created": created, "skipped": skipped}
 
 
@@ -185,6 +192,7 @@ def fetch_telegram_channels() -> dict:
 
 	created = 0
 	skipped = 0
+	logger.info("TG fetch start")
 	client = TelegramClient(StringSession(string_session), int(api_id), str(api_hash))
 	# Use context manager to connect/disconnect synchronously
 	with client:
@@ -192,8 +200,10 @@ def fetch_telegram_channels() -> dict:
 			try:
 				entity = ch.username if ch.username.startswith("@") else f"@{ch.username}"
 				offset_id = ch.last_message_id or 0
+				logger.info("TG channel=%s offset_id=%s", entity, offset_id)
 				# Fetch latest messages (newest first), then process oldest->newest
 				msgs = list(client.iter_messages(entity, limit=50))
+				logger.info("TG messages fetched=%d", len(msgs))
 				max_id = ch.last_message_id or 0
 				for m in reversed(msgs):
 					if m.id and m.id <= offset_id:
@@ -226,12 +236,15 @@ def fetch_telegram_channels() -> dict:
 							created += 1
 					except IntegrityError:
 						skipped += 1
+						logger.info("TG duplicate skip url=%s", url)
 					max_id = max(max_id, m.id or 0)
 				if max_id and max_id != (ch.last_message_id or 0):
 					ch.last_message_id = max_id
 					ch.save(update_fields=["last_message_id", "updated_at"])
 			except Exception:
 				skipped += 1
+				logger.exception("TG channel error")
+	logger.info("TG done created=%d skipped=%d", created, skipped)
 	return {"created": created, "skipped": skipped}
 
 
@@ -242,17 +255,21 @@ def fetch_websites() -> dict:
 	skipped = 0
 	for ws in WebsiteSource.objects.filter(is_active=True):
 		try:
-			resp = requests.get(ws.url, timeout=15)
+			logger.info("WEB parse start name=%s url=%s", ws.name, ws.url)
+			resp = requests.get(ws.url, timeout=15, headers={"User-Agent": "Mozilla/5.0 (compatible; ai-aggregator/1.0)"})
 			if resp.status_code != 200:
 				skipped += 1
+				logger.info("WEB non-200 status=%s", resp.status_code)
 				continue
 			soup = BeautifulSoup(resp.text, 'html.parser')
 			containers = soup.select(ws.list_selector)
+			logger.info("WEB containers=%d selector=%s", len(containers), ws.list_selector)
 			for c in containers[:50]:
 				title_el = c.select_one(ws.title_selector)
 				url_el = c.select_one(ws.url_selector)
 				if not title_el or not url_el:
 					skipped += 1
+					logger.info("WEB missing title/url")
 					continue
 				title = title_el.get_text(strip=True)
 				link = url_el.get('href') or ''
@@ -265,6 +282,7 @@ def fetch_websites() -> dict:
 					desc = desc_el.get_text(strip=True) if desc_el else ''
 				if not link:
 					skipped += 1
+					logger.info("WEB empty link")
 					continue
 				try:
 					with transaction.atomic():
@@ -288,8 +306,11 @@ def fetch_websites() -> dict:
 						created += 1
 				except IntegrityError:
 					skipped += 1
+					logger.info("WEB duplicate skip url=%s", link)
 		except Exception:
 			skipped += 1
+			logger.exception("WEB source error name=%s", ws.name)
+	logger.info("WEB done created=%d skipped=%d", created, skipped)
 	return {"created": created, "skipped": skipped}
 
 
