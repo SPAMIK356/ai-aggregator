@@ -10,8 +10,12 @@ from .models import RewriterConfig
 
 
 def get_active_config() -> Optional[RewriterConfig]:
-	cfg = RewriterConfig.objects.order_by("-updated_at").first()
-	return cfg if cfg and cfg.is_enabled else None
+    # Global kill switch via env
+    from django.conf import settings as dj_settings
+    if not getattr(dj_settings, "REWRITER_ENABLED", False):
+        return None
+    cfg = RewriterConfig.objects.order_by("-updated_at").first()
+    return cfg if cfg and cfg.is_enabled else None
 
 
 def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:

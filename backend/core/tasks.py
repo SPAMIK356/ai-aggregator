@@ -215,16 +215,24 @@ def fetch_telegram_channels() -> dict:
 						continue
 					url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}"
 					published_at = _safe_dt(getattr(m, "date", None).timetuple() if getattr(m, "date", None) else None)
-					try:
-						with transaction.atomic():
-							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
-							orig_body = (html or escape(raw_text))[:5000]
-							rew = rewrite_article(orig_title, orig_body) or {"title": orig_title, "content": orig_body}
-							img_url = ""
-							if MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
-								# Use public CDN path (Telegraph style) if available via m.photo; as a fallback, keep empty
-								# For simplicity in MVP, set image_url to the t.me view path; real download needs file save
-								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+                    try:
+                        with transaction.atomic():
+                            orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
+                            orig_body = (html or escape(raw_text))[:5000]
+                            try:
+                                rew = rewrite_article(orig_title, orig_body)
+                            except Exception:
+                                rew = None
+                            if not rew:
+                                rew = {"title": orig_title, "content": orig_body}
+                    img_url = ""
+                    # Prefer message photo thumb if present; fall back to t.me view link
+                    if getattr(m, "photo", None) and getattr(m.photo, "sizes", None):
+                        # The 'sizes' list may contain thumbs; we cannot get direct CDN without downloading.
+                        # For MVP, still fallback to t.me permalink to let the frontend open original if needed.
+                        img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+                    elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+                        img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							NewsItem.objects.create(
 								title=(rew.get("title") or orig_title)[:500],
 								original_url=url,
@@ -284,9 +292,14 @@ def fetch_websites() -> dict:
 					skipped += 1
 					logger.info("WEB empty link")
 					continue
-				try:
-					with transaction.atomic():
-						rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+                try:
+                    with transaction.atomic():
+                        try:
+                            rew = rewrite_article(title or link, desc or "")
+                        except Exception:
+                            rew = None
+                        if not rew:
+                            rew = {"title": title or link, "content": desc or ""}
 						img = ""
 						if ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
