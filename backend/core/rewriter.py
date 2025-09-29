@@ -48,9 +48,10 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	if not api_key:
 		return None
 
-	# Short timeouts and no retries so parsing never stalls (configurable)
-	timeout = float(getattr(settings, "REWRITER_TIMEOUT", 10.0))
-	client = OpenAI(api_key=api_key, timeout=timeout, max_retries=0)
+	# Short timeouts and a couple of retries; all configurable
+	timeout = float(getattr(settings, "REWRITER_TIMEOUT", 20.0))
+	base_url = getattr(settings, "OPENAI_BASE_URL", None)
+	client = OpenAI(api_key=api_key, timeout=timeout, max_retries=2, base_url=base_url)
 	logger = logging.getLogger(__name__)
 
 	system_prompt = cfg.prompt or (
@@ -59,9 +60,12 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	# Ensure the word 'json' (lowercase) is present to satisfy response_format requirements
 	if "json" not in system_prompt.lower():
 		system_prompt = system_prompt.strip() + " Return json object with keys 'title' and 'content'."
+	# Truncate to avoid excessive payload timeouts; configurable
+	max_chars = int(getattr(settings, "REWRITER_MAX_CHARS", 4000))
+	trimmed_content = content[:max_chars]
 	user_payload = {
 		"title": title,
-		"content": content,
+		"content": trimmed_content,
 	}
 
 	try:
