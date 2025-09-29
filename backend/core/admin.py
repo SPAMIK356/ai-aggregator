@@ -48,6 +48,7 @@ class WebsiteSourceAdmin(admin.ModelAdmin):
 	list_display = ("name", "url", "is_active", "created_at")
 	list_filter = ("is_active",)
 	search_fields = ("name", "url")
+	fields = ("name", "url", "is_active", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
 
 
 @admin.register(RewriterConfig)

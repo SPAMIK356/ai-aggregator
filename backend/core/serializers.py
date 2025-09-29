@@ -13,6 +13,7 @@ class NewsItemSerializer(serializers.ModelSerializer):
 			"description",
 			"published_at",
 			"source_name",
+			"image_url",
 		]
 
 
@@ -26,6 +27,7 @@ class NewsItemDetailSerializer(serializers.ModelSerializer):
 			"description",
 			"published_at",
 			"source_name",
+			"image_url",
 		]
 
 

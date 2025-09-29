@@ -5,6 +5,7 @@ interface NewsDetail {
   description: string;
   published_at: string;
   source_name: string;
+  image_url?: string;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -20,6 +21,9 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
     <article className="prose">
       <h1 style={{ marginBottom: 8 }}>{data.title}</h1>
       <div className="meta" style={{ marginBottom: 16 }}>{data.source_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
+      {data.image_url && (
+        <p><img src={data.image_url} alt="" /></p>
+      )}
       <div dangerouslySetInnerHTML={{ __html: data.description }} />
     </article>
   );

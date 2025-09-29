@@ -30,6 +30,7 @@ class NewsItem(TimeStampedModel):
 	description = models.TextField(blank=True)
 	published_at = models.DateTimeField(default=timezone.now, db_index=True)
 	source_name = models.CharField(max_length=255, blank=True)
+	image_url = models.CharField(max_length=1000, blank=True)
 
 	def __str__(self) -> str:
 		return self.title
@@ -106,6 +107,7 @@ class WebsiteSource(TimeStampedModel):
 	title_selector = models.CharField(max_length=255)
 	url_selector = models.CharField(max_length=255)
 	desc_selector = models.CharField(max_length=255, blank=True)
+	image_selector = models.CharField(max_length=255, blank=True)
 
 	def __str__(self) -> str:
 		return self.name

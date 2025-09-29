@@ -24,10 +24,12 @@ try:
 		MessageEntityCode,
 		MessageEntityPre,
 		MessageEntityBlockquote,
+		MessageMediaPhoto,
 	)
 except Exception:
 	MessageEntityBold = MessageEntityItalic = MessageEntityUnderline = None
 	MessageEntityCode = MessageEntityPre = MessageEntityBlockquote = None
+	MessageMediaPhoto = None
 
 try:
 	# Use synchronous helpers to avoid awaiting coroutines in Celery task
@@ -208,10 +210,16 @@ def fetch_telegram_channels() -> dict:
 							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
 							orig_body = (html or escape(raw_text))[:5000]
 							rew = rewrite_article(orig_title, orig_body) or {"title": orig_title, "content": orig_body}
+							img_url = ""
+							if MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+								# Use public CDN path (Telegraph style) if available via m.photo; as a fallback, keep empty
+								# For simplicity in MVP, set image_url to the t.me view path; real download needs file save
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							NewsItem.objects.create(
 								title=(rew.get("title") or orig_title)[:500],
 								original_url=url,
 								description=(rew.get("content") or orig_body)[:10000],
+								image_url=img_url,
 								published_at=published_at,
 								source_name=ch.title or ch.username,
 							)
@@ -258,13 +266,22 @@ def fetch_websites() -> dict:
 				if not link:
 					skipped += 1
 					continue
-				try:
+					try:
 					with transaction.atomic():
-						rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+							rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+							img = ""
+							if ws.image_selector:
+								img_el = c.select_one(ws.image_selector)
+								if img_el and img_el.get('src'):
+									img = img_el.get('src')
+									if img.startswith('/'):
+										from urllib.parse import urljoin
+										img = urljoin(ws.url, img)
 						NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
 							description=(rew.get("content") or desc or "")[:10000],
+								image_url=img,
 							published_at=timezone.now(),
 							source_name=ws.name,
 						)

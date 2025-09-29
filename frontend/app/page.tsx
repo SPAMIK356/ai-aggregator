@@ -10,6 +10,7 @@ type NewsItem = {
   description: string;
   published_at: string;
   source_name: string;
+  image_url?: string;
 };
 
 type ColumnItem = {
@@ -35,6 +36,7 @@ export default async function HomePage() {
             <a key={n.id} href={`/news/${n.id}`} className="card">
               <div className="card-title">{n.title}</div>
               <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
+              {n.image_url && <p style={{ marginTop: 8 }}><img src={n.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} /></p>}
               {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
             </a>
           ))}
