@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
 :root {
 	--bg: #07070b;
@@ -21,8 +21,8 @@ html, body {
 		radial-gradient(1200px 600px at 70% -20%, rgba(255,43,80,0.065), transparent 60%),
 		radial-gradient(900px 500px at 10% 10%, rgba(255,107,61,0.05), transparent 60%),
 		linear-gradient(180deg, #0b0b12 0%, #0a0a10 35%, #090910 70%, #06060a 100%);
-	color: var(--text);
-	font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 	background-attachment: fixed;
 }
 
@@ -56,12 +56,12 @@ a:hover { color: var(--accent); }
 	display: flex; gap: 16px; align-items: center;
 }
 
-.brand { font-family: 'VT323', monospace; font-size: 26px; letter-spacing: .5px; }
-.nav-button { font-family: 'VT323', monospace; letter-spacing: .4px; }
+.brand { font-family: 'Montserrat', sans-serif; font-size: 26px; letter-spacing: .5px; }
+.nav-button { font-family: 'Montserrat', sans-serif; letter-spacing: .4px; }
 
 .spacer { margin-left: auto; }
 
-.section-title { margin: 8px 0 12px; font-family: 'VT323', monospace; font-size: 22px; color: #fff; }
+.section-title { margin: 8px 0 12px; font-family: 'Montserrat', sans-serif; font-size: 22px; color: #fff; }
 
 .cards { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 920px) { .cards { grid-template-columns: 1fr 1fr; } }
@@ -85,14 +85,14 @@ a:hover { color: var(--accent); }
 .pill { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Use the same font as AI-Aggregator titles for buttons */
+/* Use site font for controls */
 button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
-	font-family: 'VT323', monospace;
-	letter-spacing: .3px;
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: .3px;
 }
 
 .prose { color: #e8ebf0; line-height: 1.6; }
-.prose h1, .prose h2, .prose h3 { font-family: 'VT323', monospace; }
+.prose h1, .prose h2, .prose h3 { font-family: 'Montserrat', sans-serif; }
 .prose img { max-width: 100%; border-radius: 8px; }
 
 /* Better typography for blockquotes and code */
