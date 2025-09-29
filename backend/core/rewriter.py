@@ -25,8 +25,11 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	client = OpenAI(api_key=api_key)
 
 	system_prompt = cfg.prompt or (
-		"You rewrite and clean AI-related articles into concise Russian. Return JSON with keys 'title' and 'content'."
+		"You rewrite and clean AI-related articles into concise Russian. Return json with keys 'title' and 'content'."
 	)
+	# Ensure the word 'json' (lowercase) is present to satisfy response_format requirements
+	if "json" not in system_prompt.lower():
+		system_prompt = system_prompt.strip() + " Return json object with keys 'title' and 'content'."
 	user_payload = {
 		"title": title,
 		"content": content,
