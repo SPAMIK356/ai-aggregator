@@ -117,6 +117,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 TG_API_ID = os.getenv("TG_API_ID")
 TG_API_HASH = os.getenv("TG_API_HASH")
 TG_STRING_SESSION = os.getenv("TG_STRING_SESSION")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Celery beat schedule configured in celery.py
 

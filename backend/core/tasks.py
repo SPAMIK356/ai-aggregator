@@ -15,6 +15,7 @@ from .models import TelegramChannel, WebsiteSource
 from bs4 import BeautifulSoup
 import re
 from html import escape
+from .rewriter import rewrite_article
 try:
 	from telethon.tl.types import (
 		MessageEntityBold,
@@ -204,10 +205,13 @@ def fetch_telegram_channels() -> dict:
 					published_at = _safe_dt(getattr(m, "date", None).timetuple() if getattr(m, "date", None) else None)
 					try:
 						with transaction.atomic():
+							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
+							orig_body = (html or escape(raw_text))[:5000]
+							rew = rewrite_article(orig_title, orig_body) or {"title": orig_title, "content": orig_body}
 							NewsItem.objects.create(
-								title=(_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200],
+								title=(rew.get("title") or orig_title)[:500],
 								original_url=url,
-								description=(html or escape(raw_text))[:5000],
+								description=(rew.get("content") or orig_body)[:10000],
 								published_at=published_at,
 								source_name=ch.title or ch.username,
 							)
@@ -254,15 +258,16 @@ def fetch_websites() -> dict:
 				if not link:
 					skipped += 1
 					continue
-				try:
+					try:
 					with transaction.atomic():
-						NewsItem.objects.create(
-							title=title or link,
-							original_url=link,
-							description=desc[:2000],
-							published_at=timezone.now(),
-							source_name=ws.name,
-						)
+							rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+							NewsItem.objects.create(
+								title=(rew.get("title") or title or link)[:500],
+								original_url=link,
+								description=(rew.get("content") or desc or "")[:10000],
+								published_at=timezone.now(),
+								source_name=ws.name,
+							)
 						created += 1
 				except IntegrityError:
 					skipped += 1
