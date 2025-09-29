@@ -1,3 +1,4 @@
+import os
 from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
@@ -15,7 +16,8 @@ urlpatterns = [
 	path("health/", health),
 ]
 
-if settings.DEBUG:
+# Serve media in dev and optionally in containers when SERVE_MEDIA=1
+if getattr(settings, "DEBUG", False) or os.getenv("SERVE_MEDIA", "1") == "1":
 	urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
