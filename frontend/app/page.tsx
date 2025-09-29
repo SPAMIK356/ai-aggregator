@@ -7,7 +7,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 type NewsItem = {
   id: number;
   title: string;
-  original_url: string;
   description: string;
   published_at: string;
   source_name: string;
@@ -33,10 +32,10 @@ export default async function HomePage() {
         <h2 className="section-title">Новости</h2>
         <div className="cards">
           {newsData.results.map((n) => (
-            <a key={n.id} href={n.original_url} target="_blank" rel="noopener noreferrer" className="card">
+            <a key={n.id} href={`/news/${n.id}`} className="card">
               <div className="card-title">{n.title}</div>
               <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-              {n.description && <p className="snippet">{n.description}</p>}
+              {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
             </a>
           ))}
         </div>

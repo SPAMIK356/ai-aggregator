@@ -16,6 +16,19 @@ class NewsItemSerializer(serializers.ModelSerializer):
 		]
 
 
+class NewsItemDetailSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = NewsItem
+		fields = [
+			"id",
+			"title",
+			"original_url",
+			"description",
+			"published_at",
+			"source_name",
+		]
+
+
 class AuthorColumnListSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = AuthorColumn

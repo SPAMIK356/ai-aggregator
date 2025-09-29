@@ -4,6 +4,7 @@ from .models import AuthorColumn, NewsItem
 from .serializers import (
 	AuthorColumnDetailSerializer,
 	AuthorColumnListSerializer,
+	NewsItemDetailSerializer,
 	NewsItemSerializer,
 )
 
@@ -21,5 +22,10 @@ class AuthorColumnListView(generics.ListAPIView):
 class AuthorColumnDetailView(generics.RetrieveAPIView):
 	queryset = AuthorColumn.objects.all()
 	serializer_class = AuthorColumnDetailSerializer
+
+
+class NewsItemDetailView(generics.RetrieveAPIView):
+	queryset = NewsItem.objects.all()
+	serializer_class = NewsItemDetailSerializer
 
 

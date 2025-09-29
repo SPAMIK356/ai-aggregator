@@ -14,10 +14,10 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
       <h1 className="section-title">Новости</h1>
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((n: any) => (
-          <a key={n.id} href={n.original_url} target="_blank" rel="noopener noreferrer" className="card">
+          <a key={n.id} href={`/news/${n.id}`} className="card">
             <div className="card-title">{n.title}</div>
             <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-            {n.description && <p className="snippet">{n.description}</p>}
+            {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
           </a>
         ))}
       </div>
