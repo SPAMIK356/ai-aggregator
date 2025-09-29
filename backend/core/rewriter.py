@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from typing import Dict, Optional
+import re
 
 from django.conf import settings
 from openai import OpenAI
+from openai import BadRequestError, APITimeoutError
 
 from .models import RewriterConfig
 
@@ -18,6 +20,25 @@ def get_active_config() -> Optional[RewriterConfig]:
     return cfg if cfg and cfg.is_enabled else None
 
 
+def _lenient_json_parse(text: str) -> Optional[Dict[str, str]]:
+	"""Attempts to parse JSON even if the model wrapped it or added prose."""
+	try:
+		# Fast path
+		return json.loads(text)
+	except Exception:
+		pass
+	# Extract the first top-level {...}
+	start = text.find("{")
+	end = text.rfind("}")
+	if start != -1 and end != -1 and end > start:
+		maybe = text[start : end + 1]
+		try:
+			return json.loads(maybe)
+		except Exception:
+			return None
+	return None
+
+
 def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	cfg = get_active_config()
 	if not cfg:
@@ -26,8 +47,9 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	if not api_key:
 		return None
 
-	# Short timeouts and no retries so parsing never stalls
-	client = OpenAI(api_key=api_key, timeout=10.0, max_retries=0)
+	# Short timeouts and no retries so parsing never stalls (configurable)
+	timeout = float(getattr(settings, "REWRITER_TIMEOUT", 10.0))
+	client = OpenAI(api_key=api_key, timeout=timeout, max_retries=0)
 
 	system_prompt = cfg.prompt or (
 		"You rewrite and clean AI-related articles into concise Russian. Return json with keys 'title' and 'content'."
@@ -40,19 +62,37 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 		"content": content,
 	}
 
-	response = client.chat.completions.create(
-		model=cfg.model,
-		messages=[
-			{"role": "system", "content": system_prompt},
-			{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-		],
-		response_format={"type": "json_object"},
-	)
-	text = response.choices[0].message.content or "{}"
 	try:
-		data = json.loads(text)
+		# Primary attempt: enforce JSON mode
+		response = client.chat.completions.create(
+			model=cfg.model,
+			messages=[
+				{"role": "system", "content": system_prompt},
+				{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+			],
+			response_format={"type": "json_object"},
+		)
+		text = response.choices[0].message.content or "{}"
+		data = _lenient_json_parse(text) or {}
 		return {"title": data.get("title") or title, "content": data.get("content") or content}
+	except BadRequestError:
+		# Fallback attempt: no response_format, but still ask for JSON in the prompt
+		try:
+			response = client.chat.completions.create(
+				model=cfg.model,
+				messages=[
+					{"role": "system", "content": system_prompt},
+					{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+				],
+			)
+			text = response.choices[0].message.content or "{}"
+			data = _lenient_json_parse(text) or {}
+			return {"title": data.get("title") or title, "content": data.get("content") or content}
+		except Exception:
+			return None
+	except APITimeoutError:
+		return None
 	except Exception:
-		return {"title": title, "content": content}
+		return None
 
 
