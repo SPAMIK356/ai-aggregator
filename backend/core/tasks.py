@@ -258,16 +258,16 @@ def fetch_websites() -> dict:
 				if not link:
 					skipped += 1
 					continue
-					try:
+				try:
 					with transaction.atomic():
-							rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
-							NewsItem.objects.create(
-								title=(rew.get("title") or title or link)[:500],
-								original_url=link,
-								description=(rew.get("content") or desc or "")[:10000],
-								published_at=timezone.now(),
-								source_name=ws.name,
-							)
+						rew = rewrite_article(title or link, desc or "") or {"title": title or link, "content": desc or ""}
+						NewsItem.objects.create(
+							title=(rew.get("title") or title or link)[:500],
+							original_url=link,
+							description=(rew.get("content") or desc or "")[:10000],
+							published_at=timezone.now(),
+							source_name=ws.name,
+						)
 						created += 1
 				except IntegrityError:
 					skipped += 1
