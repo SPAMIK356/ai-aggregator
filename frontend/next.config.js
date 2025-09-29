@@ -2,17 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  images: {
+    // Disable optimizer so any relative /media/... works without domain config
+    unoptimized: true,
+  },
   env: {
-    // Default to relative API path; override via env only when needed
-    NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE || '/api',
-     NEXT_SERVER_API_BASE: process.env.NEXT_SERVER_API_BASE || 'http://backend:8000/api',
+    NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api',
+    NEXT_SERVER_API_BASE: process.env.NEXT_SERVER_API_BASE || 'http://backend:8000/api',
   },
   async rewrites() {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
     return [
       {
         source: '/api/:path*',
-        destination: `${apiBase}/:path*`,
+        destination: 'http://backend:8000/api/:path*',
+      },
+      {
+        source: '/media/:path*',
+        destination: 'http://backend:8000/media/:path*',
       },
     ];
   },
