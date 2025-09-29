@@ -1,5 +1,6 @@
 import React from 'react';
 import './globals.css';
+import Image from 'next/image';
 
 export const metadata = {
 	title: 'AI-Aggregator',
@@ -14,10 +15,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<div className="container">
 						<nav className="nav">
 							<a href="/" className="brand">AI-Aggregator</a>
-							<a href="/news">Новости</a>
-							<a href="/columns">Авторские колонки</a>
+							<a href="/news" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src="/icons/News_site.png" alt="Новости" width={18} height={18} />
+								Новости
+							</a>
+							<a href="/columns" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src="/icons/Autors.png" alt="Авторские колонки" width={18} height={18} />
+								Авторские колонки
+							</a>
 							<span className="spacer" />
-							<a href="/contact">Контакты</a>
+							<a href="/contact" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src="/icons/Contact.png" alt="Контакты" width={18} height={18} />
+								Контакты
+							</a>
 						</nav>
 					</div>
 				</header>

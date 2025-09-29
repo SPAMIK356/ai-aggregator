@@ -84,6 +84,12 @@ a:hover { color: var(--accent); }
 .pill { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Use the same font as AI-Aggregator titles for buttons */
+button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
+	font-family: 'VT323', monospace;
+	letter-spacing: .3px;
+}
+
 .prose { color: #e8ebf0; line-height: 1.6; }
 .prose h1, .prose h2, .prose h3 { font-family: 'VT323', monospace; }
 .prose img { max-width: 100%; border-radius: 8px; }
