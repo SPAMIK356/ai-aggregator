@@ -13,6 +13,20 @@ from django.utils import timezone
 from .models import NewsItem, NewsSource
 from .models import TelegramChannel, WebsiteSource
 from bs4 import BeautifulSoup
+import re
+from html import escape
+try:
+	from telethon.tl.types import (
+		MessageEntityBold,
+		MessageEntityItalic,
+		MessageEntityUnderline,
+		MessageEntityCode,
+		MessageEntityPre,
+		MessageEntityBlockquote,
+	)
+except Exception:
+	MessageEntityBold = MessageEntityItalic = MessageEntityUnderline = None
+	MessageEntityCode = MessageEntityPre = MessageEntityBlockquote = None
 
 try:
 	# Use synchronous helpers to avoid awaiting coroutines in Celery task
@@ -28,6 +42,60 @@ def _safe_dt(value) -> datetime:
 		return datetime(*value[:6], tzinfo=timezone.utc) if value else timezone.now()
 	except Exception:
 		return timezone.now()
+
+
+def _strip_html_tags(value: str) -> str:
+	return re.sub(r"<[^>]+>", "", value)
+
+
+def _format_telegram_html(text: str, entities) -> str:
+	"""Render a subset of Telegram entities into HTML tags.
+
+	Supports: bold, italic, underline, code/pre, blockquote.
+	Falls back to escaping raw text if entities missing.
+	"""
+	if not text:
+		return ""
+	if not entities:
+		return escape(text)
+	# Build list of (start, end, tag_open, tag_close)
+	wraps = []
+	for e in entities:
+		offset = getattr(e, "offset", None)
+		length = getattr(e, "length", None)
+		if offset is None or length is None:
+			continue
+		start = int(offset)
+		end = int(offset + length)
+		tag_open = tag_close = None
+		if MessageEntityBold and isinstance(e, MessageEntityBold):
+			tag_open, tag_close = "<b>", "</b>"
+		elif MessageEntityItalic and isinstance(e, MessageEntityItalic):
+			tag_open, tag_close = "<i>", "</i>"
+		elif MessageEntityUnderline and isinstance(e, MessageEntityUnderline):
+			tag_open, tag_close = "<u>", "</u>"
+		elif MessageEntityCode and isinstance(e, MessageEntityCode):
+			tag_open, tag_close = "<code>", "</code>"
+		elif MessageEntityPre and isinstance(e, MessageEntityPre):
+			tag_open, tag_close = "<pre>", "</pre>"
+		elif MessageEntityBlockquote and isinstance(e, MessageEntityBlockquote):
+			tag_open, tag_close = "<blockquote>", "</blockquote>"
+		if tag_open:
+			wraps.append((start, end, tag_open, tag_close))
+	# Apply wraps from right to left to keep indices valid
+	result = escape(text)
+	for start, end, open_tag, close_tag in sorted(wraps, key=lambda x: x[0], reverse=True):
+		# Map to escaped positions is non-trivial; as a simplification,
+		# re-slice from original text and escape piecewise.
+		orig_segment = text[start:end]
+		result = (
+			escape(text[:start])
+			+ open_tag
+			+ escape(orig_segment)
+			+ close_tag
+			+ escape(text[end:])
+		)
+	return result
 
 
 @shared_task
@@ -127,8 +195,9 @@ def fetch_telegram_channels() -> dict:
 				for m in reversed(msgs):
 					if m.id and m.id <= offset_id:
 						continue
-					text = (getattr(m, "text", None) or getattr(m, "message", None) or "").strip()
-					if not text:
+					raw_text = (getattr(m, "text", None) or getattr(m, "message", None) or "")
+					html = _format_telegram_html(raw_text, getattr(m, "entities", None))
+					if not (raw_text or html):
 						skipped += 1
 						continue
 					url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}"
@@ -136,9 +205,9 @@ def fetch_telegram_channels() -> dict:
 					try:
 						with transaction.atomic():
 							NewsItem.objects.create(
-								title=(text.split("\n")[0] or url)[:200],
+								title=(_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200],
 								original_url=url,
-								description=text[:2000],
+								description=(html or escape(raw_text))[:5000],
 								published_at=published_at,
 								source_name=ch.title or ch.username,
 							)
