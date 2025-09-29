@@ -38,8 +38,6 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 			{"role": "system", "content": system_prompt},
 			{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
 		],
-		# Some newer models require 'max_completion_tokens' instead of 'max_tokens'
-		max_completion_tokens=cfg.max_output_tokens,
 		response_format={"type": "json_object"},
 	)
 	text = response.choices[0].message.content or "{}"
