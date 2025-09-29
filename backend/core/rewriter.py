@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Dict, Optional
 import re
+import time
 
 import logging
 from django.conf import settings
@@ -48,10 +49,12 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	if not api_key:
 		return None
 
-	# Short timeouts and a couple of retries; all configurable
-	timeout = float(getattr(settings, "REWRITER_TIMEOUT", 20.0))
+	# Configurable
 	base_url = getattr(settings, "OPENAI_BASE_URL", None)
-	client = OpenAI(api_key=api_key, timeout=timeout, max_retries=2, base_url=base_url)
+	base_timeout = float(getattr(settings, "REWRITER_TIMEOUT", 30.0))
+	max_timeout = float(getattr(settings, "REWRITER_MAX_TIMEOUT", 90.0))
+	attempts = int(getattr(settings, "REWRITER_ATTEMPTS", 6))
+	backoff = float(getattr(settings, "REWRITER_BACKOFF_SECONDS", 5.0))
 	logger = logging.getLogger(__name__)
 
 	system_prompt = cfg.prompt or (
@@ -68,58 +71,69 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 		"content": trimmed_content,
 	}
 
-	try:
-		# Primary attempt: enforce JSON mode
-		response = client.chat.completions.create(
-			model=cfg.model,
-			messages=[
-				{"role": "system", "content": system_prompt},
-				{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-			],
-			response_format={"type": "json_object"},
-		)
-		text = response.choices[0].message.content or "{}"
-		data = _lenient_json_parse(text) or {}
-		return {"title": data.get("title") or title, "content": data.get("content") or content}
-	except BadRequestError as e:
-		msg = str(e)
-		logger.warning("Rewriter BadRequest on model=%s: %s", cfg.model, msg)
-		# Try fallback model if model seems invalid
-		fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
-		if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
-			try:
-				response = client.chat.completions.create(
-					model=fallback_model,
-					messages=[
-						{"role": "system", "content": system_prompt},
-						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-					],
-					response_format={"type": "json_object"},
-				)
-				text = response.choices[0].message.content or "{}"
-				data = _lenient_json_parse(text) or {}
-				return {"title": data.get("title") or title, "content": data.get("content") or content}
-			except Exception as e2:
-				logger.warning("Rewriter fallback model failed: %s", e2)
-		# Fallback attempt: no response_format, but still ask for JSON in the prompt
+	last_err: Optional[Exception] = None
+	for i in range(attempts):
+		attempt_timeout = min(base_timeout * (2 ** i), max_timeout)
+		client = OpenAI(api_key=api_key, timeout=attempt_timeout, max_retries=0, base_url=base_url)
 		try:
+			# Primary attempt: enforce JSON mode
 			response = client.chat.completions.create(
 				model=cfg.model,
 				messages=[
 					{"role": "system", "content": system_prompt},
 					{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
 				],
+				response_format={"type": "json_object"},
 			)
 			text = response.choices[0].message.content or "{}"
 			data = _lenient_json_parse(text) or {}
 			return {"title": data.get("title") or title, "content": data.get("content") or content}
-		except Exception:
-			return None
-	except (APITimeoutError, RateLimitError) as e:
-		logger.warning("Rewriter transient error: %s", e)
-		return None
-	except Exception as e:
-		logger.exception("Rewriter unexpected error: %s", e)
-		return None
+		except BadRequestError as e:
+			msg = str(e)
+			logger.warning("Rewriter BadRequest on model=%s: %s", cfg.model, msg)
+			# Try fallback model if model seems invalid
+			fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
+			if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
+				try:
+					response = client.chat.completions.create(
+						model=fallback_model,
+						messages=[
+							{"role": "system", "content": system_prompt},
+							{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+						],
+						response_format={"type": "json_object"},
+					)
+					text = response.choices[0].message.content or "{}"
+					data = _lenient_json_parse(text) or {}
+					return {"title": data.get("title") or title, "content": data.get("content") or content}
+				except Exception as e2:
+					last_err = e2
+					logger.warning("Rewriter fallback model failed: %s", e2)
+			# Fallback attempt: no response_format, but still ask for JSON in the prompt
+			try:
+				response = client.chat.completions.create(
+					model=cfg.model,
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+					],
+				)
+				text = response.choices[0].message.content or "{}"
+				data = _lenient_json_parse(text) or {}
+				return {"title": data.get("title") or title, "content": data.get("content") or content}
+			except Exception as e3:
+				last_err = e3
+		except (APITimeoutError, RateLimitError) as e:
+			last_err = e
+			logger.warning("Rewriter transient error (attempt %s/%s, timeout=%ss): %s", i+1, attempts, int(attempt_timeout), e)
+		except Exception as e:
+			last_err = e
+			logger.exception("Rewriter unexpected error: %s", e)
+		# Backoff before next attempt
+		if i < attempts - 1:
+			time.sleep(backoff * (2 ** i))
+
+	logger.error("Rewriter failed after %s attempts: %s", attempts, last_err)
+	return None
 
 
