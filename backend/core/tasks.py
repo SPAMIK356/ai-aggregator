@@ -241,6 +241,17 @@ def fetch_telegram_channels() -> dict:
 									saved = client.download_media(m, file=str(target_dir))
 									if saved:
 										saved_path = Path(saved)
+										# Normalize filename to avoid spaces/parentheses in URLs
+										try:
+											orig_name = saved_path.name
+											safe_name = re.sub(r"\s+", "_", orig_name)
+											safe_name = safe_name.replace("(", "").replace(")", "")
+											if safe_name != orig_name:
+												new_path = saved_path.with_name(safe_name)
+												saved_path.rename(new_path)
+												saved_path = new_path
+										except Exception:
+											pass
 										media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
 										rel = saved_path.relative_to(media_root)
 										media_url = getattr(settings, "MEDIA_URL", "/media/")
