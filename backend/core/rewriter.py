@@ -36,13 +36,13 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 		"content": content,
 	}
 
-		response = client.chat.completions.create(
+	response = client.chat.completions.create(
 		model=cfg.model,
 		messages=[
 			{"role": "system", "content": system_prompt},
 			{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
 		],
-			response_format={"type": "json_object"},
+		response_format={"type": "json_object"},
 	)
 	text = response.choices[0].message.content or "{}"
 	try:
