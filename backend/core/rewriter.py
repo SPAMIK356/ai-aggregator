@@ -4,9 +4,10 @@ import json
 from typing import Dict, Optional
 import re
 
+import logging
 from django.conf import settings
 from openai import OpenAI
-from openai import BadRequestError, APITimeoutError
+from openai import BadRequestError, APITimeoutError, RateLimitError
 
 from .models import RewriterConfig
 
@@ -50,6 +51,7 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	# Short timeouts and no retries so parsing never stalls (configurable)
 	timeout = float(getattr(settings, "REWRITER_TIMEOUT", 10.0))
 	client = OpenAI(api_key=api_key, timeout=timeout, max_retries=0)
+	logger = logging.getLogger(__name__)
 
 	system_prompt = cfg.prompt or (
 		"You rewrite and clean AI-related articles into concise Russian. Return json with keys 'title' and 'content'."
@@ -75,7 +77,26 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 		text = response.choices[0].message.content or "{}"
 		data = _lenient_json_parse(text) or {}
 		return {"title": data.get("title") or title, "content": data.get("content") or content}
-	except BadRequestError:
+	except BadRequestError as e:
+		msg = str(e)
+		logger.warning("Rewriter BadRequest on model=%s: %s", cfg.model, msg)
+		# Try fallback model if model seems invalid
+		fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
+		if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
+			try:
+				response = client.chat.completions.create(
+					model=fallback_model,
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+					],
+					response_format={"type": "json_object"},
+				)
+				text = response.choices[0].message.content or "{}"
+				data = _lenient_json_parse(text) or {}
+				return {"title": data.get("title") or title, "content": data.get("content") or content}
+			except Exception as e2:
+				logger.warning("Rewriter fallback model failed: %s", e2)
 		# Fallback attempt: no response_format, but still ask for JSON in the prompt
 		try:
 			response = client.chat.completions.create(
@@ -90,9 +111,11 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 			return {"title": data.get("title") or title, "content": data.get("content") or content}
 		except Exception:
 			return None
-	except APITimeoutError:
+	except (APITimeoutError, RateLimitError) as e:
+		logger.warning("Rewriter transient error: %s", e)
 		return None
-	except Exception:
+	except Exception as e:
+		logger.exception("Rewriter unexpected error: %s", e)
 		return None
 
 
