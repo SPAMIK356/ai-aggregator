@@ -57,6 +57,7 @@ a:hover { color: var(--accent); }
 }
 
 .brand { font-family: 'VT323', monospace; font-size: 26px; letter-spacing: .5px; }
+.nav-button { font-family: 'VT323', monospace; letter-spacing: .4px; }
 
 .spacer { margin-left: auto; }
 
