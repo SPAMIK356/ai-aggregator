@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
+import os
 from typing import Iterable, Optional
 
 import feedparser
@@ -231,10 +233,23 @@ def fetch_telegram_channels() -> dict:
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
 							img_url = ""
-							# Prefer message photo if present; fallback to t.me permalink view
-							if getattr(m, "photo", None):
-								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-							elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+							# If the message has a photo, download it into MEDIA and build a public URL
+							try:
+								if getattr(m, "photo", None):
+									target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
+									target_dir.mkdir(parents=True, exist_ok=True)
+									saved = client.download_media(m, file=str(target_dir))
+									if saved:
+										saved_path = Path(saved)
+										media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+										rel = saved_path.relative_to(media_root)
+										media_url = getattr(settings, "MEDIA_URL", "/media/")
+										img_url = f"{media_url}{rel.as_posix()}"
+								elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+									# Fallback: no download possible, keep t.me view link
+									img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+							except Exception:
+								# If anything fails, fall back to t.me permalink
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							NewsItem.objects.create(
 								title=(rew.get("title") or orig_title)[:500],
