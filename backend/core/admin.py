@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter
 
 
 @admin.register(NewsSource)
@@ -54,5 +54,12 @@ class WebsiteSourceAdmin(admin.ModelAdmin):
 @admin.register(RewriterConfig)
 class RewriterConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "model", "max_output_tokens", "updated_at")
+
+
+@admin.register(KeywordFilter)
+class KeywordFilterAdmin(admin.ModelAdmin):
+	list_display = ("phrase", "is_active", "updated_at")
+	list_filter = ("is_active",)
+	search_fields = ("phrase",)
 
 

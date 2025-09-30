@@ -113,3 +113,17 @@ class WebsiteSource(TimeStampedModel):
 		return self.name
 
 
+
+class KeywordFilter(TimeStampedModel):
+	"""Global list of phrases to skip before rewriting/posting.
+
+	If any active phrase is found (case-insensitive substring) in the original
+	text of a potential news item, that item is skipped entirely.
+	"""
+	phrase = models.CharField(max_length=255)
+	is_active = models.BooleanField(default=True)
+
+	def __str__(self) -> str:
+		return self.phrase
+
+

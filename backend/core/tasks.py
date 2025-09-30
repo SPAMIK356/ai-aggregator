@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import NewsItem, NewsSource
-from .models import TelegramChannel, WebsiteSource
+from .models import TelegramChannel, WebsiteSource, KeywordFilter
 from bs4 import BeautifulSoup
 import re
 from html import escape
@@ -110,6 +110,9 @@ def _format_telegram_html(text: str, entities) -> str:
 def run_parser() -> dict:
 	created = 0
 	skipped = 0
+	# Load active keyword phrases once
+	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
+	phrases_lc = [p.lower() for p in phrases if p]
 	for source in NewsSource.objects.filter(is_active=True):
 		logger.info("RSS parse start url=%s", source.url)
 		feed = feedparser.parse(source.url)
@@ -122,6 +125,14 @@ def run_parser() -> dict:
 			published_parsed = getattr(entry, "published_parsed", None)
 			published_at = _safe_dt(published_parsed)
 			if not link:
+				skipped += 1
+				continue
+			# Keyword filter (pre-rewrite)
+			orig_title = title or link
+			orig_body = description or ""
+			full_text = f"{orig_title}\n{orig_body}".lower()
+			if phrases_lc and any(kw in full_text for kw in phrases_lc):
+				logger.info("RSS keyword skip url=%s", link)
 				skipped += 1
 				continue
 			try:
@@ -194,6 +205,9 @@ def fetch_telegram_channels() -> dict:
 
 	created = 0
 	skipped = 0
+	# Load active keyword phrases once
+	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
+	phrases_lc = [p.lower() for p in phrases if p]
 	logger.info("TG fetch start")
 	client = TelegramClient(StringSession(string_session), int(api_id), str(api_hash))
 	# Use context manager to connect/disconnect synchronously
@@ -215,6 +229,8 @@ def fetch_telegram_channels() -> dict:
 				for m in reversed(msgs):
 					if m.id and m.id <= offset_id:
 						continue
+					# Track max_id early so skips still advance checkpoint
+					max_id = max(max_id, m.id or 0)
 					raw_text = (getattr(m, "text", None) or getattr(m, "message", None) or "")
 					html = _format_telegram_html(raw_text, getattr(m, "entities", None))
 					if not (raw_text or html):
@@ -226,6 +242,13 @@ def fetch_telegram_channels() -> dict:
 						with transaction.atomic():
 							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
 							orig_body = (html or escape(raw_text))[:5000]
+							# Keyword filter (pre-rewrite)
+							if phrases_lc:
+								full_text = f"{orig_title}\n{orig_body}".lower()
+								if any(kw in full_text for kw in phrases_lc):
+									logger.info("TG keyword skip url=%s", url)
+									skipped += 1
+									continue
 							try:
 								rew = rewrite_article(orig_title, orig_body)
 							except Exception:
@@ -294,6 +317,9 @@ def fetch_websites() -> dict:
 	"""Parse configured websites using CSS selectors and save as NewsItem."""
 	created = 0
 	skipped = 0
+	# Load active keyword phrases once
+	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
+	phrases_lc = [p.lower() for p in phrases if p]
 	for ws in WebsiteSource.objects.filter(is_active=True):
 		try:
 			logger.info("WEB parse start name=%s url=%s", ws.name, ws.url)
@@ -325,6 +351,13 @@ def fetch_websites() -> dict:
 					skipped += 1
 					logger.info("WEB empty link")
 					continue
+				# Keyword filter (pre-rewrite)
+				if phrases_lc:
+					full_text = f"{title}\n{desc}".lower()
+					if any(kw in full_text for kw in phrases_lc):
+						logger.info("WEB keyword skip url=%s", link)
+						skipped += 1
+						continue
 				try:
 					with transaction.atomic():
 						try:
