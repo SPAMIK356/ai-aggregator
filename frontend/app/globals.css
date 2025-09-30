@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 :root {
 	--bg: #07070b;
@@ -56,8 +57,8 @@ a:hover { color: var(--accent); }
 	display: flex; gap: 16px; align-items: center;
 }
 
-.brand { font-family: 'Montserrat', sans-serif; font-size: 26px; letter-spacing: .5px; }
-.nav-button { font-family: 'Montserrat', sans-serif; letter-spacing: .4px; }
+.brand { font-family: 'VT323', monospace; font-size: 26px; letter-spacing: .5px; }
+.nav-button { font-family: 'VT323', monospace; letter-spacing: .4px; }
 
 .spacer { margin-left: auto; }
 
