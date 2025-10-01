@@ -31,6 +31,7 @@ class NewsItem(TimeStampedModel):
 	published_at = models.DateTimeField(default=timezone.now, db_index=True)
 	source_name = models.CharField(max_length=255, blank=True)
 	image_url = models.CharField(max_length=1000, blank=True)
+	image_file = models.ImageField(upload_to="news/", null=True, blank=True)
 
 	def __str__(self) -> str:
 		return self.title
@@ -41,6 +42,8 @@ class AuthorColumn(TimeStampedModel):
 	author_name = models.CharField(max_length=255)
 	content_body = models.TextField()
 	published_at = models.DateTimeField(default=timezone.now, db_index=True)
+	image_url = models.CharField(max_length=1000, blank=True)
+	image_file = models.ImageField(upload_to="columns/", null=True, blank=True)
 
 	def __str__(self) -> str:
 		return f"{self.title} — {self.author_name}"

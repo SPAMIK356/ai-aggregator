@@ -16,6 +16,7 @@ class NewsItemAdmin(admin.ModelAdmin):
 	list_filter = ("source_name",)
 	search_fields = ("title", "original_url", "source_name")
 	readonly_fields = ("created_at", "updated_at")
+	fields = ("title", "original_url", "description", "published_at", "source_name", "image_url", "image_file", "created_at", "updated_at")
 
 
 @admin.register(AuthorColumn)
@@ -23,6 +24,7 @@ class AuthorColumnAdmin(admin.ModelAdmin):
 	list_display = ("title", "author_name", "published_at", "created_at")
 	search_fields = ("title", "author_name")
 	readonly_fields = ("created_at", "updated_at")
+	fields = ("title", "author_name", "content_body", "published_at", "image_url", "image_file", "created_at", "updated_at")
 
 
 @admin.register(OutboxEvent)
