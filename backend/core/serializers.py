@@ -20,10 +20,9 @@ class NewsItemSerializer(serializers.ModelSerializer):
 		]
 
 	def get_resolved_image(self, obj: NewsItem) -> str:
-		request = self.context.get("request") if hasattr(self, 'context') else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return request.build_absolute_uri(url) if request and url and url.startswith("/") else url
+			return url
 		return obj.image_url or ""
 
 
@@ -44,10 +43,9 @@ class NewsItemDetailSerializer(serializers.ModelSerializer):
 		]
 
 	def get_resolved_image(self, obj: NewsItem) -> str:
-		request = self.context.get("request") if hasattr(self, 'context') else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return request.build_absolute_uri(url) if request and url and url.startswith("/") else url
+			return url
 		return obj.image_url or ""
 
 
@@ -65,10 +63,9 @@ class AuthorColumnDetailSerializer(serializers.ModelSerializer):
 		fields = ["id", "title", "author_name", "published_at", "content_body", "image_url", "resolved_image"]
 
 	def get_resolved_image(self, obj: AuthorColumn) -> str:
-		request = self.context.get("request") if hasattr(self, 'context') else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return request.build_absolute_uri(url) if request and url and url.startswith("/") else url
+			return url
 		return obj.image_url or ""
 
 
