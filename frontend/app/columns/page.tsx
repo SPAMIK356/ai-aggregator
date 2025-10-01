@@ -15,6 +15,11 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((c: any) => (
           <a key={c.id} href={`/columns/${c.id}`} className="card">
+            {(c.resolved_image || c.image_url) && (
+              <div style={{ marginBottom: 8 }}>
+                <img src={c.resolved_image || c.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+              </div>
+            )}
             <div className="card-title">{c.title}</div>
             <div className="meta">{c.author_name} · {new Date(c.published_at).toLocaleString('ru-RU')}</div>
           </a>
