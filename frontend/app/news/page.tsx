@@ -15,6 +15,11 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((n: any) => (
           <a key={n.id} href={`/news/${n.id}`} className="card">
+            {(n.resolved_image || n.image_url) && (
+              <div style={{ marginBottom: 8 }}>
+                <img src={n.resolved_image || n.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+              </div>
+            )}
             <div className="card-title">{n.title}</div>
             <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
             {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
