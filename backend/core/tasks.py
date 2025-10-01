@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import NewsItem, NewsSource
-from .models import TelegramChannel, WebsiteSource, KeywordFilter
+from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig
 from bs4 import BeautifulSoup
 import re
 from html import escape
@@ -108,6 +108,11 @@ def _format_telegram_html(text: str, entities) -> str:
 
 @shared_task
 def run_parser() -> dict:
+    # Global parser toggle
+    cfg = ParserConfig.objects.order_by("-updated_at").first()
+    if cfg and not cfg.is_enabled:
+        logger.info("RSS parser disabled by admin")
+        return {"created": 0, "skipped": 0, "disabled": True}
 	created = 0
 	skipped = 0
 	# Load active keyword phrases once
@@ -203,7 +208,13 @@ def fetch_telegram_channels() -> dict:
 	if not (api_id and api_hash and string_session):
 		return {"error": "missing TG creds"}
 
-	created = 0
+    # Global parser toggle
+    cfg = ParserConfig.objects.order_by("-updated_at").first()
+    if cfg and not cfg.is_enabled:
+        logger.info("TG parser disabled by admin")
+        return {"created": 0, "skipped": 0, "disabled": True}
+
+    created = 0
 	skipped = 0
 	# Load active keyword phrases once
 	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
@@ -315,7 +326,13 @@ def fetch_telegram_channels() -> dict:
 @shared_task
 def fetch_websites() -> dict:
 	"""Parse configured websites using CSS selectors and save as NewsItem."""
-	created = 0
+    # Global parser toggle
+    cfg = ParserConfig.objects.order_by("-updated_at").first()
+    if cfg and not cfg.is_enabled:
+        logger.info("WEB parser disabled by admin")
+        return {"created": 0, "skipped": 0, "disabled": True}
+
+    created = 0
 	skipped = 0
 	# Load active keyword phrases once
 	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))

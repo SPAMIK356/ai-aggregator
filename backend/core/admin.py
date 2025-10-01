@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig
 
 
 @admin.register(NewsSource)
@@ -64,4 +64,9 @@ class KeywordFilterAdmin(admin.ModelAdmin):
 	list_filter = ("is_active",)
 	search_fields = ("phrase",)
 
+
+@admin.register(ParserConfig)
+class ParserConfigAdmin(admin.ModelAdmin):
+	list_display = ("is_enabled", "updated_at")
+	readonly_fields = ("created_at", "updated_at")
 

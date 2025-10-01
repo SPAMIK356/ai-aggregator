@@ -130,3 +130,10 @@ class KeywordFilter(TimeStampedModel):
 		return self.phrase
 
 
+class ParserConfig(TimeStampedModel):
+	"""Global toggle for all parsing tasks."""
+	is_enabled = models.BooleanField(default=True)
+
+	def __str__(self) -> str:
+		return f"Parser ({'on' if self.is_enabled else 'off'})"
+

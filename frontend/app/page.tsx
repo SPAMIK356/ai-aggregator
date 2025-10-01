@@ -11,6 +11,7 @@ type NewsItem = {
   published_at: string;
   source_name: string;
   image_url?: string;
+  resolved_image?: string;
 };
 
 type ColumnItem = {
@@ -18,6 +19,8 @@ type ColumnItem = {
   title: string;
   author_name: string;
   published_at: string;
+  image_url?: string;
+  resolved_image?: string;
 };
 
 export default async function HomePage() {
@@ -28,15 +31,19 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="cards" style={{ gap: 24 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
       <section>
         <h2 className="section-title">Новости</h2>
-        <div className="cards">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {newsData.results.map((n) => (
             <a key={n.id} href={`/news/${n.id}`} className="card">
+              {(n.resolved_image || n.image_url) && (
+                <div style={{ marginBottom: 8 }}>
+                  <img src={n.resolved_image || n.image_url!} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+                </div>
+              )}
               <div className="card-title">{n.title}</div>
               <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-              {n.image_url && <p style={{ marginTop: 8 }}><img src={n.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} /></p>}
               {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
             </a>
           ))}
@@ -45,9 +52,14 @@ export default async function HomePage() {
 
       <section>
         <h2 className="section-title">Авторские колонки</h2>
-        <div className="cards">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {columnsData.results.map((c) => (
             <a key={c.id} href={`/columns/${c.id}`} className="card">
+              {(c.resolved_image || c.image_url) && (
+                <div style={{ marginBottom: 8 }}>
+                  <img src={c.resolved_image || c.image_url!} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+                </div>
+              )}
               <div className="card-title">{c.title}</div>
               <div className="meta">{c.author_name} · {new Date(c.published_at).toLocaleString('ru-RU')}</div>
             </a>
