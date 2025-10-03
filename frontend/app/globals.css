@@ -24,8 +24,8 @@ html, body {
 		radial-gradient(1100px 620px at 20% 92%, rgba(139,92,246,0.12), transparent 60%),  /* violet glow bottom-left */
 		radial-gradient(950px 520px at 92% 72%, rgba(236,72,153,0.10), transparent 60%),   /* pink accent bottom-right */
 		linear-gradient(180deg, #0b0b12 0%, #0a0a12 35%, #090914 70%, #070712 100%);
-    color: var(--text);
-    font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	color: var(--text);
+	/* Global font inherits from body class via next/font/local */
 	background-attachment: fixed;
 }
 
@@ -59,8 +59,8 @@ a:hover { color: var(--accent); }
 	display: flex; gap: 16px; align-items: center;
 }
 
-.brand { font-family: 'VT323', monospace; font-size: 26px; letter-spacing: .5px; }
-.nav-button { font-family: 'VT323', monospace; letter-spacing: .4px; }
+.brand { font-size: 26px; letter-spacing: .5px; }
+.nav-button { letter-spacing: .4px; }
 
 .spacer { margin-left: auto; }
 
@@ -95,7 +95,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 }
 
 .prose { color: #e8ebf0; line-height: 1.6; }
-.prose h1, .prose h2, .prose h3 { font-family: 'Montserrat', sans-serif; }
+.prose h1, .prose h2, .prose h3 { }
 .prose img { max-width: 100%; border-radius: 8px; }
 
 /* Better typography for blockquotes and code */
