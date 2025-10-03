@@ -38,6 +38,11 @@ export default async function HomePage() {
     safeFetchList<ColumnItem>(`${api}/columns/?page=1`),
   ]);
 
+  // Build a dynamic ticker date: real day/month, fixed year 2049
+  const now = new Date();
+  const datePrefix = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const tickerDate = `${datePrefix} 2049`;
+
   return (
     <>
       <section className="hero">
@@ -55,11 +60,11 @@ export default async function HomePage() {
 
       <div className="ticker" aria-hidden>
         <div className="ticker-track">
-          <span className="ticker-item">1 октября 2049</span>
+          <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n) => (
             <span key={`t1-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
-          <span className="ticker-item">1 октября 2049</span>
+          <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n) => (
             <span key={`t2-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
