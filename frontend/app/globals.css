@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-/* Local site font (place file at public/fonts/DIGITALPIXELV4-REGULAR.OTF) */
+/* Local site font (served from public/fonts) */
 @font-face {
-	font-family: 'DigitalPixel';
-	src: url('/fonts/DIGITALPIXELV4-REGULAR.OTF') format('opentype');
+	font-family: 'FSEX300';
+	src: url('/fonts/FSEX300.ttf') format('truetype');
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
@@ -34,7 +34,7 @@ html, body {
 		radial-gradient(950px 520px at 92% 72%, rgba(236,72,153,0.10), transparent 60%),   /* pink accent bottom-right */
 		linear-gradient(180deg, #0b0b12 0%, #0a0a12 35%, #090914 70%, #070712 100%);
 	color: var(--text);
-	font-family: 'DigitalPixel', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	font-family: 'FSEX300', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 	background-attachment: fixed;
 }
 
