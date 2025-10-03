@@ -134,6 +134,9 @@ class ParserConfig(TimeStampedModel):
 	"""Global toggle for all parsing tasks."""
 	is_enabled = models.BooleanField(default=True)
 	min_chars = models.PositiveIntegerField(default=0, help_text="Skip posts shorter than this many characters (0 to disable)")
+	max_image_width = models.PositiveIntegerField(default=1280, help_text="Max image width in pixels (0 to disable)")
+	max_image_height = models.PositiveIntegerField(default=720, help_text="Max image height in pixels (0 to disable)")
+	image_quality = models.PositiveIntegerField(default=85, help_text="JPEG/WebP quality 1-95")
 
 	def __str__(self) -> str:
 		return f"Parser ({'on' if self.is_enabled else 'off'})"

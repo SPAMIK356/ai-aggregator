@@ -16,6 +16,8 @@ from django.utils import timezone
 from .models import NewsItem, NewsSource
 from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig
 from bs4 import BeautifulSoup
+from PIL import Image, ImageOps
+from urllib.parse import urlparse
 import re
 from html import escape
 from .rewriter import rewrite_article
@@ -104,6 +106,49 @@ def _format_telegram_html(text: str, entities) -> str:
 			+ escape(text[end:])
 		)
 	return result
+
+
+def _compress_image_at_path(path: Path, cfg: Optional[ParserConfig]) -> None:
+	"""Resize/compress image in-place if it exceeds cfg max dimensions.
+
+	Safe no-op on errors or if cfg has limits disabled.
+	"""
+	try:
+		if not cfg:
+			return
+		max_w = int(getattr(cfg, "max_image_width", 0) or 0)
+		max_h = int(getattr(cfg, "max_image_height", 0) or 0)
+		quality = int(getattr(cfg, "image_quality", 85) or 85)
+		if not (max_w or max_h):
+			return
+		if not path.exists():
+			return
+		with Image.open(path) as im:
+			im = ImageOps.exif_transpose(im)
+			w, h = im.size
+			# Compute scale preserving aspect
+			scale_w = (max_w / w) if (max_w and w > max_w) else 1.0
+			scale_h = (max_h / h) if (max_h and h > max_h) else 1.0
+			scale = min(scale_w, scale_h)
+			if scale < 1.0:
+				new_size = (max(1, int(w * scale)), max(1, int(h * scale)))
+				im = im.resize(new_size, Image.LANCZOS)
+			ext = path.suffix.lower()
+			params = {}
+			if ext in (".jpg", ".jpeg"):
+				params = {"format": "JPEG", "quality": quality, "optimize": True, "progressive": True}
+			elif ext == ".webp":
+				params = {"format": "WEBP", "quality": quality, "method": 6}
+			elif ext == ".png":
+				params = {"format": "PNG", "optimize": True}
+			if params:
+				im.save(path, **params)
+			else:
+				# Fallback keep original format
+				im.save(path)
+	except Exception:
+		# Best-effort; ignore compression failures
+		logger.exception("Image compression failed for %s", str(path))
 
 
 @shared_task
@@ -297,8 +342,14 @@ def fetch_telegram_channels() -> dict:
 												saved_path = new_path
 										except Exception:
 											pass
-										media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-										rel = saved_path.relative_to(media_root)
+								media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+								# Compress if exceeds limits
+								try:
+									cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+									_compress_image_at_path(saved_path, cfg2)
+								except Exception:
+									logger.exception("Compress failed")
+								rel = saved_path.relative_to(media_root)
 										media_url = getattr(settings, "MEDIA_URL", "/media/")
 										img_url = f"{media_url}{rel.as_posix()}"
 										logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
@@ -401,13 +452,45 @@ def fetch_websites() -> dict:
                             skipped += 1
                             continue
 						img = ""
-						if ws.image_selector:
+				if ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
 							if img_el and (img_el.get('src') or img_el.get('data-src')):
-								img = img_el.get('src') or img_el.get('data-src')
-								if img and img.startswith('/'):
-									from urllib.parse import urljoin
-									img = urljoin(ws.url, img)
+						img = img_el.get('src') or img_el.get('data-src')
+						if img and img.startswith('/'):
+							from urllib.parse import urljoin
+							img = urljoin(ws.url, img)
+						# Download image into MEDIA and compress
+						try:
+							if img:
+								media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+								target_dir = media_root / "web" / urlparse(ws.url).hostname.replace('.', '_')
+								target_dir.mkdir(parents=True, exist_ok=True)
+								resp_img = requests.get(img, timeout=20)
+								if resp_img.status_code == 200:
+									import hashlib
+									hash_name = hashlib.sha1(img.encode('utf-8')).hexdigest()[:16]
+									ext = ".jpg"
+									ct = resp_img.headers.get("Content-Type", "").lower()
+									if "png" in ct:
+										ext = ".png"
+									elif "webp" in ct:
+										ext = ".webp"
+									elif "jpeg" in ct or "jpg" in ct:
+										ext = ".jpg"
+									local_path = target_dir / f"{hash_name}{ext}"
+									with open(local_path, "wb") as f:
+										f.write(resp_img.content)
+									# Compress per config
+									try:
+										cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+										_compress_image_at_path(local_path, cfg2)
+									except Exception:
+										logger.exception("Compress failed (web)")
+									media_url = getattr(settings, "MEDIA_URL", "/media/")
+									rel = local_path.relative_to(media_root)
+									img = f"{media_url}{rel.as_posix()}"
+						except Exception:
+							logger.exception("WEB image download failed")
 						NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
