@@ -4,12 +4,6 @@ import Image from 'next/image';
 import newsIcon from '../icons/News_site.png';
 import authorsIcon from '../icons/Autors.png';
 import contactIcon from '../icons/Contact.png';
-import localFont from 'next/font/local';
-
-const digital = localFont({
-	src: '../fonts/DIGITALPIXELV4-REGULAR.OTF',
-	display: 'swap',
-});
 
 export const metadata = {
 	title: '2049.news',
@@ -19,7 +13,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="ru">
-			<body className={digital.className}>
+			<body>
 				<header className="site-header">
 					<div className="container">
 					<nav className="nav">
