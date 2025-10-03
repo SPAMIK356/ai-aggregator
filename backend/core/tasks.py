@@ -113,6 +113,7 @@ def run_parser() -> dict:
     if cfg and not cfg.is_enabled:
         logger.info("RSS parser disabled by admin")
         return {"created": 0, "skipped": 0, "disabled": True}
+    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 	created = 0
 	skipped = 0
 	# Load active keyword phrases once
@@ -140,8 +141,12 @@ def run_parser() -> dict:
 				logger.info("RSS keyword skip url=%s", link)
 				skipped += 1
 				continue
-			try:
+            try:
 				with transaction.atomic():
+                    # Skip too-short items per admin config
+                    if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
+                        skipped += 1
+                        continue
 					NewsItem.objects.create(
 						title=title or link,
 						original_url=link,
@@ -213,6 +218,7 @@ def fetch_telegram_channels() -> dict:
     if cfg and not cfg.is_enabled:
         logger.info("TG parser disabled by admin")
         return {"created": 0, "skipped": 0, "disabled": True}
+    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 
     created = 0
 	skipped = 0
@@ -260,12 +266,17 @@ def fetch_telegram_channels() -> dict:
 									logger.info("TG keyword skip url=%s", url)
 									skipped += 1
 									continue
-							try:
+                            try:
 								rew = rewrite_article(orig_title, orig_body)
 							except Exception:
 								rew = None
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
+                            # Skip too-short per config (check rewritten/body)
+                            effective_body = (rew.get("content") or orig_body) or ""
+                            if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+                                skipped += 1
+                                continue
 							img_url = ""
 							# If the message has a photo, download it into MEDIA and build a public URL
 							try:
@@ -331,6 +342,7 @@ def fetch_websites() -> dict:
     if cfg and not cfg.is_enabled:
         logger.info("WEB parser disabled by admin")
         return {"created": 0, "skipped": 0, "disabled": True}
+    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 
     created = 0
 	skipped = 0
@@ -375,7 +387,7 @@ def fetch_websites() -> dict:
 						logger.info("WEB keyword skip url=%s", link)
 						skipped += 1
 						continue
-				try:
+                try:
 					with transaction.atomic():
 						try:
 							rew = rewrite_article(title or link, desc or "")
@@ -383,6 +395,11 @@ def fetch_websites() -> dict:
 							rew = None
 						if not rew:
 							rew = {"title": title or link, "content": desc or ""}
+                        # Skip too-short per config
+                        effective_body = (rew.get("content") or desc or "")
+                        if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+                            skipped += 1
+                            continue
 						img = ""
 						if ws.image_selector:
 							img_el = c.select_one(ws.image_selector)

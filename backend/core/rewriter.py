@@ -63,12 +63,10 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	# Ensure the word 'json' (lowercase) is present to satisfy response_format requirements
 	if "json" not in system_prompt.lower():
 		system_prompt = system_prompt.strip() + " Return json object with keys 'title' and 'content'."
-	# Truncate to avoid excessive payload timeouts; configurable
-	max_chars = int(getattr(settings, "REWRITER_MAX_CHARS", 4000))
-	trimmed_content = content[:max_chars]
+	# No trimming by env; send full content (API timeouts still apply)
 	user_payload = {
 		"title": title,
-		"content": trimmed_content,
+		"content": content,
 	}
 
 	last_err: Optional[Exception] = None

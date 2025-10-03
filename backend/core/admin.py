@@ -67,6 +67,6 @@ class KeywordFilterAdmin(admin.ModelAdmin):
 
 @admin.register(ParserConfig)
 class ParserConfigAdmin(admin.ModelAdmin):
-	list_display = ("is_enabled", "updated_at")
+	list_display = ("is_enabled", "min_chars", "updated_at")
 	readonly_fields = ("created_at", "updated_at")
 
