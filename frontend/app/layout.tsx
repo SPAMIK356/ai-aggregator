@@ -6,8 +6,8 @@ import authorsIcon from '../icons/Autors.png';
 import contactIcon from '../icons/Contact.png';
 
 export const metadata = {
-	title: 'AI-Aggregator',
-	description: 'Новости и авторские колонки об искусственном интеллекте',
+	title: '2049.news',
+	description: 'Новости будущего: AI, технологии, крипто',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,20 +16,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body>
 				<header className="site-header">
 					<div className="container">
-						<nav className="nav">
-							<a href="/" className="brand">AI-Aggregator</a>
-							<a href="/news" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+					<nav className="nav">
+						<a href="/" className="brand">2049.news</a>
+						<a href="/news" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 								<Image src={newsIcon} alt="News" width={18} height={18} />
-								News
+							Новости будущего
 							</a>
-							<a href="/columns" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						<a href="/columns" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 								<Image src={authorsIcon} alt="Author columns" width={18} height={18} />
-								Author columns
+							Блоги от инсайдеров
 							</a>
 							<span className="spacer" />
-							<a href="/contact" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						<a href="/contact" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 								<Image src={contactIcon} alt="Contacts" width={18} height={18} />
-								Contacts
+							Контакты
 							</a>
 						</nav>
 					</div>

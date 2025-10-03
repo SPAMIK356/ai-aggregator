@@ -31,9 +31,36 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+    <>
+      <section className="hero">
+        <h1>Новости из будущего, которое уже наступает</h1>
+        <p>
+          2049.news — это медиа о будущем технологий, искусственного интеллекта и криптоэкономики. Здесь создают контент сами разработчики и предприниматели — люди, которые двигают прогресс.
+        </p>
+        <ul className="slogans">
+          <li><em>AI, технологии, крипто — взгляд в 2049</em></li>
+          <li><em>Место, где разработчики, предприниматели и визионеры пишут историю будущего</em></li>
+          <li><em>От киберпанка к реальности: разбор того, что меняет мир прямо сейчас</em></li>
+          <li><em>2049 — не просто дата, а метафора будущего</em></li>
+        </ul>
+      </section>
+
+      <div className="ticker" aria-hidden>
+        <div className="ticker-track">
+          <span className="ticker-item">1 октября 2049</span>
+          {newsData.results.slice(0, 8).map((n) => (
+            <span key={`t1-${n.id}`} className="ticker-item">{n.title}</span>
+          ))}
+          <span className="ticker-item">1 октября 2049</span>
+          {newsData.results.slice(0, 8).map((n) => (
+            <span key={`t2-${n.id}`} className="ticker-item">{n.title}</span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
       <section>
-        <h2 className="section-title">Новости</h2>
+        <h2 className="section-title">Новости будущего</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {newsData.results.map((n) => (
             <a key={n.id} href={`/news/${n.id}`} className="card">
@@ -44,14 +71,14 @@ export default async function HomePage() {
               )}
               <div className="card-title">{n.title}</div>
               <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-              {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
+              {n.description && <p className="snippet">{n.description.length > 220 ? n.description.slice(0, 220) + '…' : n.description}</p>}
             </a>
           ))}
         </div>
       </section>
 
       <section>
-        <h2 className="section-title">Авторские колонки</h2>
+        <h2 className="section-title">Блоги от инсайдеров</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {columnsData.results.map((c) => (
             <a key={c.id} href={`/columns/${c.id}`} className="card">
@@ -66,7 +93,8 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
