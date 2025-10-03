@@ -8,7 +8,7 @@ type Props = {
 };
 
 export default function SmartThumb({ src, alt = '' }: Props) {
-  const [bucket, setBucket] = React.useState<'wide' | 'square' | 'tall'>('wide');
+  const [bucket, setBucket] = React.useState<'wide' | 'square' | 'tall'>('square');
 
   const onLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
