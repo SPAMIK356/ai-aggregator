@@ -1,4 +1,3 @@
-import SmartThumb from "../../components/SmartThumb";
 async function fetchJson(url: string) {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch');
@@ -18,7 +17,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
           <a key={c.id} href={`/columns/${c.id}`} className="card">
             {(c.resolved_image || c.image_url) && (
               <div style={{ marginBottom: 8 }}>
-                <SmartThumb src={c.resolved_image || c.image_url} />
+                <img src={c.resolved_image || c.image_url} alt="" className="thumb" />
               </div>
             )}
             <div className="card-title">{c.title}</div>
