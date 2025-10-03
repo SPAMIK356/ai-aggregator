@@ -17,7 +17,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
           <a key={n.id} href={`/news/${n.id}`} className="card">
             {(n.resolved_image || n.image_url) && (
               <div style={{ marginBottom: 8 }}>
-                <img src={n.resolved_image || n.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+                <img src={n.resolved_image || n.image_url} alt="" className="thumb" />
               </div>
             )}
             <div className="card-title">{n.title}</div>

@@ -79,7 +79,7 @@ export default async function HomePage() {
             <a key={n.id} href={`/news/${n.id}`} className="card">
               {(n.resolved_image || n.image_url) && (
                 <div style={{ marginBottom: 8 }}>
-                  <img src={n.resolved_image || n.image_url!} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+                  <img src={n.resolved_image || n.image_url!} alt="" className="thumb" />
                 </div>
               )}
               <div className="card-title">{n.title}</div>
@@ -97,7 +97,7 @@ export default async function HomePage() {
             <a key={c.id} href={`/columns/${c.id}`} className="card">
               {(c.resolved_image || c.image_url) && (
                 <div style={{ marginBottom: 8 }}>
-                  <img src={c.resolved_image || c.image_url!} alt="" style={{ maxWidth: '100%', borderRadius: 6 }} />
+                  <img src={c.resolved_image || c.image_url!} alt="" className="thumb" />
                 </div>
               )}
               <div className="card-title">{c.title}</div>
