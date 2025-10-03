@@ -4,6 +4,14 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
+async function safeFetchList<T>(url: string): Promise<{ results: T[] }> {
+  try {
+    return await fetchJson<{ results: T[] }>(url);
+  } catch {
+    return { results: [] };
+  }
+}
+
 type NewsItem = {
   id: number;
   title: string;
@@ -26,8 +34,8 @@ type ColumnItem = {
 export default async function HomePage() {
   const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
   const [newsData, columnsData] = await Promise.all([
-    fetchJson<{ results: NewsItem[] }>(`${api}/news/?page=1`),
-    fetchJson<{ results: ColumnItem[] }>(`${api}/columns/?page=1`),
+    safeFetchList<NewsItem>(`${api}/news/?page=1`),
+    safeFetchList<ColumnItem>(`${api}/columns/?page=1`),
   ]);
 
   return (
