@@ -22,7 +22,7 @@ export default async function ColumnDetailPage({ params }: { params: { id: strin
       <h1 style={{ marginBottom: 8 }}>{data.title}</h1>
       <div className="meta" style={{ marginBottom: 16 }}>{data.author_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
       {(data.resolved_image || data.image_url) && (
-        <p><img src={data.resolved_image || data.image_url!} alt="" /></p>
+        <p><img src={data.resolved_image || data.image_url!} alt="" className="thumb" /></p>
       )}
       <div dangerouslySetInnerHTML={{ __html: data.content_body }} />
     </article>
