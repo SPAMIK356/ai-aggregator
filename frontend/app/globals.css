@@ -92,10 +92,17 @@ a:hover { color: var(--accent); }
 /* Uniform feed thumbnails */
 .thumb {
 	width: 100%;
-	height: 180px; /* fixed crop height */
+	height: 180px; /* default */
 	object-fit: cover;
 	border-radius: 6px;
 }
+
+/* SmartThumb buckets */
+.thumb-wrap { width: 100%; border-radius: 6px; overflow: hidden; }
+.thumb-wrap .thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb-wrap.wide { height: 160px; }
+.thumb-wrap.square { height: 220px; }
+.thumb-wrap.tall { height: 280px; }
 
 .card-title { font-weight: 700; }
 .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }

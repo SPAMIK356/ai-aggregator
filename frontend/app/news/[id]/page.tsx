@@ -1,3 +1,4 @@
+import SmartThumb from "../../../components/SmartThumb";
 interface NewsDetail {
   id: number;
   title: string;
@@ -23,7 +24,7 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
       <h1 style={{ marginBottom: 8 }}>{data.title}</h1>
       <div className="meta" style={{ marginBottom: 16 }}>{data.source_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
       {(data.resolved_image || data.image_url) && (
-        <p><img src={data.resolved_image || data.image_url!} alt="" className="thumb" /></p>
+        <p><SmartThumb src={data.resolved_image || data.image_url!} /></p>
       )}
       <div dangerouslySetInnerHTML={{ __html: data.description }} />
     </article>
