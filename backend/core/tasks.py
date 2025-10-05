@@ -300,8 +300,8 @@ def fetch_telegram_channels() -> dict:
 						continue
 					url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}"
 					published_at = _safe_dt(getattr(m, "date", None).timetuple() if getattr(m, "date", None) else None)
-				try:
-					with transaction.atomic():
+					try:
+						with transaction.atomic():
 							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
 							orig_body = (html or escape(raw_text))[:5000]
 							# Keyword filter (pre-rewrite)
@@ -311,17 +311,17 @@ def fetch_telegram_channels() -> dict:
 									logger.info("TG keyword skip url=%s", url)
 									skipped += 1
 									continue
-						try:
-							rew = rewrite_article(orig_title, orig_body)
-						except Exception:
-							rew = None
+							try:
+								rew = rewrite_article(orig_title, orig_body)
+							except Exception:
+								rew = None
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
-						# Skip too-short per config (check rewritten/body)
-						effective_body = (rew.get("content") or orig_body) or ""
-						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
-							skipped += 1
-							continue
+							# Skip too-short per config (check rewritten/body)
+							effective_body = (rew.get("content") or orig_body) or ""
+							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+								skipped += 1
+								continue
 							img_url = ""
 							# If the message has a photo, download it into MEDIA and build a public URL
 							try:
@@ -342,35 +342,35 @@ def fetch_telegram_channels() -> dict:
 												saved_path = new_path
 										except Exception:
 											pass
-							media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-							# Compress if exceeds limits
-							try:
-								cfg2 = ParserConfig.objects.order_by("-updated_at").first()
-								_compress_image_at_path(saved_path, cfg2)
-							except Exception:
-								logger.exception("Compress failed")
-							rel = saved_path.relative_to(media_root)
-							media_url = getattr(settings, "MEDIA_URL", "/media/")
-							img_url = f"{media_url}{rel.as_posix()}"
-							logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
-								elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
-									# Fallback: no download possible, keep t.me view link
-									img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-									logger.info("TG image fallback to permalink url=%s", img_url)
+									media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+									# Compress if exceeds limits
+									try:
+										cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+										_compress_image_at_path(saved_path, cfg2)
+									except Exception:
+										logger.exception("Compress failed")
+									rel = saved_path.relative_to(media_root)
+									media_url = getattr(settings, "MEDIA_URL", "/media/")
+									img_url = f"{media_url}{rel.as_posix()}"
+									logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
+							elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+								# Fallback: no download possible, keep t.me view link
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+								logger.info("TG image fallback to permalink url=%s", img_url)
 							except Exception:
 								# If anything fails, fall back to t.me permalink
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.exception("TG image download failed; using permalink url=%s", img_url)
-							NewsItem.objects.create(
-								title=(rew.get("title") or orig_title)[:500],
-								original_url=url,
-								description=(rew.get("content") or orig_body)[:10000],
-								image_url=img_url,
-								published_at=published_at,
-								source_name=ch.title or ch.username,
-							)
-							logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
-							created += 1
+						NewsItem.objects.create(
+							title=(rew.get("title") or orig_title)[:500],
+							original_url=url,
+							description=(rew.get("content") or orig_body)[:10000],
+							image_url=img_url,
+							published_at=published_at,
+							source_name=ch.title or ch.username,
+						)
+						logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
+						created += 1
 					except IntegrityError:
 						skipped += 1
 						logger.info("TG duplicate skip url=%s", url)
