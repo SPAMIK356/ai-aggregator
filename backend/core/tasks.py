@@ -153,12 +153,12 @@ def _compress_image_at_path(path: Path, cfg: Optional[ParserConfig]) -> None:
 
 @shared_task
 def run_parser() -> dict:
-    # Global parser toggle
-    cfg = ParserConfig.objects.order_by("-updated_at").first()
-    if cfg and not cfg.is_enabled:
-        logger.info("RSS parser disabled by admin")
-        return {"created": 0, "skipped": 0, "disabled": True}
-    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
+	# Global parser toggle
+	cfg = ParserConfig.objects.order_by("-updated_at").first()
+	if cfg and not cfg.is_enabled:
+		logger.info("RSS parser disabled by admin")
+		return {"created": 0, "skipped": 0, "disabled": True}
+	min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 	created = 0
 	skipped = 0
 	# Load active keyword phrases once
@@ -186,12 +186,12 @@ def run_parser() -> dict:
 				logger.info("RSS keyword skip url=%s", link)
 				skipped += 1
 				continue
-            try:
+			try:
 				with transaction.atomic():
-                    # Skip too-short items per admin config
-                    if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
-                        skipped += 1
-                        continue
+					# Skip too-short items per admin config
+					if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
+						skipped += 1
+						continue
 					NewsItem.objects.create(
 						title=title or link,
 						original_url=link,
@@ -258,14 +258,14 @@ def fetch_telegram_channels() -> dict:
 	if not (api_id and api_hash and string_session):
 		return {"error": "missing TG creds"}
 
-    # Global parser toggle
-    cfg = ParserConfig.objects.order_by("-updated_at").first()
-    if cfg and not cfg.is_enabled:
-        logger.info("TG parser disabled by admin")
-        return {"created": 0, "skipped": 0, "disabled": True}
-    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
+	# Global parser toggle
+	cfg = ParserConfig.objects.order_by("-updated_at").first()
+	if cfg and not cfg.is_enabled:
+		logger.info("TG parser disabled by admin")
+		return {"created": 0, "skipped": 0, "disabled": True}
+	min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 
-    created = 0
+	created = 0
 	skipped = 0
 	# Load active keyword phrases once
 	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
@@ -300,8 +300,8 @@ def fetch_telegram_channels() -> dict:
 						continue
 					url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}"
 					published_at = _safe_dt(getattr(m, "date", None).timetuple() if getattr(m, "date", None) else None)
-					try:
-						with transaction.atomic():
+				try:
+					with transaction.atomic():
 							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
 							orig_body = (html or escape(raw_text))[:5000]
 							# Keyword filter (pre-rewrite)
@@ -311,17 +311,17 @@ def fetch_telegram_channels() -> dict:
 									logger.info("TG keyword skip url=%s", url)
 									skipped += 1
 									continue
-                            try:
-								rew = rewrite_article(orig_title, orig_body)
-							except Exception:
-								rew = None
+						try:
+							rew = rewrite_article(orig_title, orig_body)
+						except Exception:
+							rew = None
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
-                            # Skip too-short per config (check rewritten/body)
-                            effective_body = (rew.get("content") or orig_body) or ""
-                            if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
-                                skipped += 1
-                                continue
+						# Skip too-short per config (check rewritten/body)
+						effective_body = (rew.get("content") or orig_body) or ""
+						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+							skipped += 1
+							continue
 							img_url = ""
 							# If the message has a photo, download it into MEDIA and build a public URL
 							try:
@@ -342,17 +342,17 @@ def fetch_telegram_channels() -> dict:
 												saved_path = new_path
 										except Exception:
 											pass
-								media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-								# Compress if exceeds limits
-								try:
-									cfg2 = ParserConfig.objects.order_by("-updated_at").first()
-									_compress_image_at_path(saved_path, cfg2)
-								except Exception:
-									logger.exception("Compress failed")
-								rel = saved_path.relative_to(media_root)
-										media_url = getattr(settings, "MEDIA_URL", "/media/")
-										img_url = f"{media_url}{rel.as_posix()}"
-										logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
+							media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+							# Compress if exceeds limits
+							try:
+								cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+								_compress_image_at_path(saved_path, cfg2)
+							except Exception:
+								logger.exception("Compress failed")
+							rel = saved_path.relative_to(media_root)
+							media_url = getattr(settings, "MEDIA_URL", "/media/")
+							img_url = f"{media_url}{rel.as_posix()}"
+							logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
 								elif MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 									# Fallback: no download possible, keep t.me view link
 									img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
@@ -388,14 +388,14 @@ def fetch_telegram_channels() -> dict:
 @shared_task
 def fetch_websites() -> dict:
 	"""Parse configured websites using CSS selectors and save as NewsItem."""
-    # Global parser toggle
-    cfg = ParserConfig.objects.order_by("-updated_at").first()
-    if cfg and not cfg.is_enabled:
-        logger.info("WEB parser disabled by admin")
-        return {"created": 0, "skipped": 0, "disabled": True}
-    min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
+	# Global parser toggle
+	cfg = ParserConfig.objects.order_by("-updated_at").first()
+	if cfg and not cfg.is_enabled:
+		logger.info("WEB parser disabled by admin")
+		return {"created": 0, "skipped": 0, "disabled": True}
+	min_chars = int(getattr(cfg, "min_chars", 0) or 0) if cfg else 0
 
-    created = 0
+	created = 0
 	skipped = 0
 	# Load active keyword phrases once
 	phrases = list(KeywordFilter.objects.filter(is_active=True).values_list("phrase", flat=True))
@@ -438,7 +438,7 @@ def fetch_websites() -> dict:
 						logger.info("WEB keyword skip url=%s", link)
 						skipped += 1
 						continue
-                try:
+				try:
 					with transaction.atomic():
 						try:
 							rew = rewrite_article(title or link, desc or "")
@@ -446,51 +446,51 @@ def fetch_websites() -> dict:
 							rew = None
 						if not rew:
 							rew = {"title": title or link, "content": desc or ""}
-                        # Skip too-short per config
-                        effective_body = (rew.get("content") or desc or "")
-                        if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
-                            skipped += 1
-                            continue
+						# Skip too-short per config
+						effective_body = (rew.get("content") or desc or "")
+						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+							skipped += 1
+							continue
 						img = ""
-				if ws.image_selector:
+						if ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
 							if img_el and (img_el.get('src') or img_el.get('data-src')):
-						img = img_el.get('src') or img_el.get('data-src')
-						if img and img.startswith('/'):
-							from urllib.parse import urljoin
-							img = urljoin(ws.url, img)
-						# Download image into MEDIA and compress
-						try:
-							if img:
-								media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-								target_dir = media_root / "web" / urlparse(ws.url).hostname.replace('.', '_')
-								target_dir.mkdir(parents=True, exist_ok=True)
-								resp_img = requests.get(img, timeout=20)
-								if resp_img.status_code == 200:
-									import hashlib
-									hash_name = hashlib.sha1(img.encode('utf-8')).hexdigest()[:16]
-									ext = ".jpg"
-									ct = resp_img.headers.get("Content-Type", "").lower()
-									if "png" in ct:
-										ext = ".png"
-									elif "webp" in ct:
-										ext = ".webp"
-									elif "jpeg" in ct or "jpg" in ct:
-										ext = ".jpg"
-									local_path = target_dir / f"{hash_name}{ext}"
-									with open(local_path, "wb") as f:
-										f.write(resp_img.content)
-									# Compress per config
-									try:
-										cfg2 = ParserConfig.objects.order_by("-updated_at").first()
-										_compress_image_at_path(local_path, cfg2)
-									except Exception:
-										logger.exception("Compress failed (web)")
-									media_url = getattr(settings, "MEDIA_URL", "/media/")
-									rel = local_path.relative_to(media_root)
-									img = f"{media_url}{rel.as_posix()}"
-						except Exception:
-							logger.exception("WEB image download failed")
+								img = img_el.get('src') or img_el.get('data-src')
+								if img and img.startswith('/'):
+									from urllib.parse import urljoin
+									img = urljoin(ws.url, img)
+								# Download image into MEDIA and compress
+								try:
+									if img:
+										media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+										target_dir = media_root / "web" / urlparse(ws.url).hostname.replace('.', '_')
+										target_dir.mkdir(parents=True, exist_ok=True)
+										resp_img = requests.get(img, timeout=20)
+										if resp_img.status_code == 200:
+											import hashlib
+											hash_name = hashlib.sha1(img.encode('utf-8')).hexdigest()[:16]
+											ext = ".jpg"
+											ct = resp_img.headers.get("Content-Type", "").lower()
+											if "png" in ct:
+												ext = ".png"
+											elif "webp" in ct:
+												ext = ".webp"
+											elif "jpeg" in ct or "jpg" in ct:
+												ext = ".jpg"
+											local_path = target_dir / f"{hash_name}{ext}"
+											with open(local_path, "wb") as f:
+												f.write(resp_img.content)
+											# Compress per config
+											try:
+												cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+												_compress_image_at_path(local_path, cfg2)
+											except Exception:
+												logger.exception("Compress failed (web)")
+											media_url = getattr(settings, "MEDIA_URL", "/media/")
+											rel = local_path.relative_to(media_root)
+											img = f"{media_url}{rel.as_posix()}"
+								except Exception:
+									logger.exception("WEB image download failed")
 						NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
