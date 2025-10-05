@@ -123,6 +123,20 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 
+# More resilient broker/backends (helps with Redis UNBLOCK/role changes and timeouts)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_POOL_LIMIT = int(os.getenv("CELERY_BROKER_POOL_LIMIT", "10"))
+CELERY_BROKER_HEARTBEAT = int(os.getenv("CELERY_BROKER_HEARTBEAT", "30"))
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+	"visibility_timeout": int(os.getenv("CELERY_VISIBILITY_TIMEOUT", "3600")),
+	"socket_keepalive": True,
+	"socket_connect_timeout": float(os.getenv("CELERY_SOCKET_CONNECT_TIMEOUT", "5")),
+	"socket_timeout": float(os.getenv("CELERY_SOCKET_TIMEOUT", "30")),
+	"retry_on_timeout": True,
+	"health_check_interval": int(os.getenv("CELERY_HEALTH_CHECK_INTERVAL", "30")),
+}
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"retry_on_timeout": True}
+
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 TG_API_ID = os.getenv("TG_API_ID")
 TG_API_HASH = os.getenv("TG_API_HASH")
