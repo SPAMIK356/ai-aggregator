@@ -322,26 +322,26 @@ def fetch_telegram_channels() -> dict:
 							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
 								skipped += 1
 								continue
-							img_url = ""
-							# If the message has a photo, download it into MEDIA and build a public URL
-							try:
-								if getattr(m, "photo", None):
-									target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
-									target_dir.mkdir(parents=True, exist_ok=True)
-									saved = client.download_media(m, file=str(target_dir))
-									if saved:
-										saved_path = Path(saved)
-										# Normalize filename to avoid spaces/parentheses in URLs
-										try:
-											orig_name = saved_path.name
-											safe_name = re.sub(r"\s+", "_", orig_name)
-											safe_name = safe_name.replace("(", "").replace(")", "")
-											if safe_name != orig_name:
-												new_path = saved_path.with_name(safe_name)
-												saved_path.rename(new_path)
-												saved_path = new_path
-										except Exception:
-											pass
+						img_url = ""
+						# If the message has a photo, download it into MEDIA and build a public URL
+						try:
+							if getattr(m, "photo", None):
+								target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
+								target_dir.mkdir(parents=True, exist_ok=True)
+								saved = client.download_media(m, file=str(target_dir))
+								if saved:
+									saved_path = Path(saved)
+									# Normalize filename to avoid spaces/parentheses in URLs
+									try:
+										orig_name = saved_path.name
+										safe_name = re.sub(r"\s+", "_", orig_name)
+										safe_name = safe_name.replace("(", "").replace(")", "")
+										if safe_name != orig_name:
+											new_path = saved_path.with_name(safe_name)
+											saved_path.rename(new_path)
+											saved_path = new_path
+									except Exception:
+										pass
 									media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
 									# Compress if exceeds limits
 									try:
@@ -357,10 +357,10 @@ def fetch_telegram_channels() -> dict:
 								# Fallback: no download possible, keep t.me view link
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.info("TG image fallback to permalink url=%s", img_url)
-							except Exception:
-								# If anything fails, fall back to t.me permalink
-								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-								logger.exception("TG image download failed; using permalink url=%s", img_url)
+						except Exception:
+							# If anything fails, fall back to t.me permalink
+							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+							logger.exception("TG image download failed; using permalink url=%s", img_url)
 						NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
