@@ -4,6 +4,10 @@ async function fetchJson(url: string) {
   return res.json();
 }
 
+function stripHtml(input: string): string {
+  return (input || "").replace(/<[^>]+>/g, "");
+}
+
 export default async function NewsListPage({ searchParams }: { searchParams: { page?: string } }) {
   const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
   const page = Number(searchParams?.page || 1);
@@ -22,7 +26,14 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
             )}
             <div className="card-title">{n.title}</div>
             <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-            {n.description && <p className="snippet">{n.description.length > 300 ? n.description.slice(0, 300) + '…' : n.description}</p>}
+            {n.description && (
+              <p className="snippet">
+                {(() => {
+                  const text = stripHtml(n.description);
+                  return text.length > 300 ? text.slice(0, 300) + '…' : text;
+                })()}
+              </p>
+            )}
           </a>
         ))}
       </div>

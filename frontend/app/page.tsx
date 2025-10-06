@@ -12,6 +12,10 @@ async function safeFetchList<T>(url: string): Promise<{ results: T[] }> {
   }
 }
 
+function stripHtml(input: string): string {
+  return (input || "").replace(/<[^>]+>/g, "");
+}
+
 type NewsItem = {
   id: number;
   title: string;
@@ -84,7 +88,14 @@ export default async function HomePage() {
               )}
               <div className="card-title">{n.title}</div>
               <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-              {n.description && <p className="snippet">{n.description.length > 220 ? n.description.slice(0, 220) + '…' : n.description}</p>}
+              {n.description && (
+                <p className="snippet">
+                  {(() => {
+                    const text = stripHtml(n.description);
+                    return text.length > 220 ? text.slice(0, 220) + '…' : text;
+                  })()}
+                </p>
+              )}
             </a>
           ))}
         </div>
