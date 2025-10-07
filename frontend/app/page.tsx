@@ -119,24 +119,8 @@ export default async function HomePage() {
       </section>
       </div>
 
-      {/* Footer content (from CMS) */}
-      <FooterContent />
     </>
   );
 }
 
-
-async function FooterContent() {
-  const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
-  try {
-    const page = await fetchJson<{ slug: string; title: string; body: string }>(`${api}/pages/footer/`);
-    return (
-      <section className="prose" style={{ marginTop: 24 }}>
-        <div dangerouslySetInnerHTML={{ __html: page.body }} />
-      </section>
-    );
-  } catch {
-    return null;
-  }
-}
 
