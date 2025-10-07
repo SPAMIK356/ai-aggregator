@@ -27,6 +27,7 @@
 html, body {
 	padding: 0;
 	margin: 0;
+	min-height: 100vh;
 	background:
 		radial-gradient(1400px 800px at 80% -10%, rgba(168,85,247,0.15), transparent 60%), /* purple glow top-right */
 		radial-gradient(1200px 700px at 12% 18%, rgba(99,102,241,0.14), transparent 60%),  /* indigo glow top-left */
@@ -37,6 +38,9 @@ html, body {
 	font-family: 'FSEX300', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 	background-attachment: fixed;
 }
+
+body { display: flex; flex-direction: column; }
+main { flex: 1 0 auto; }
 
 /* reduce gradient banding with a subtle noise overlay */
 body::before {
