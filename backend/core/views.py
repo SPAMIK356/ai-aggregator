@@ -2,13 +2,14 @@ from rest_framework import generics, parsers, status
 from rest_framework.response import Response
 from django.db import transaction
 
-from .models import AuthorColumn, NewsItem
+from .models import AuthorColumn, NewsItem, SitePage
 from django.db.models import Q
 from .serializers import (
 	AuthorColumnDetailSerializer,
 	AuthorColumnListSerializer,
 	NewsItemDetailSerializer,
 	NewsItemSerializer,
+    SitePageSerializer,
 )
 
 
@@ -102,5 +103,11 @@ class NewsItemCreateView(generics.CreateAPIView):
 			obj.save(update_fields=["image_file", "updated_at"])
 		ser = self.get_serializer(obj, context={"request": request})
 		return Response(ser.data, status=status.HTTP_201_CREATED)
+
+
+class SitePageDetailView(generics.RetrieveAPIView):
+	lookup_field = "slug"
+	queryset = SitePage.objects.all()
+	serializer_class = SitePageSerializer
 
 

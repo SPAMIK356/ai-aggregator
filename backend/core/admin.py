@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage
 
 
 @admin.register(NewsSource)
@@ -70,3 +70,9 @@ class ParserConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "min_chars", "updated_at")
 	readonly_fields = ("created_at", "updated_at")
 
+
+@admin.register(SitePage)
+class SitePageAdmin(admin.ModelAdmin):
+	list_display = ("slug", "title", "updated_at")
+	search_fields = ("slug", "title")
+	readonly_fields = ("created_at", "updated_at")

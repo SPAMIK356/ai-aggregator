@@ -38,6 +38,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					</div>
 				</header>
 				<main className="container">{children}</main>
+				<footer className="site-footer">
+					<div className="container">
+						<div id="footer-content" />
+						<nav className="footer-nav">
+							<a href="/columns" className="nav-button">Блоги от инсайдеров</a>
+							<a href="/news?tag=crypto" className="nav-button">Крипта</a>
+							<a href="/news?tag=ai" className="nav-button">ИИ</a>
+							<a href="/contact" className="nav-button">Контакты</a>
+							<a href="/about" className="nav-button">О нас</a>
+							<a href="/privacy" className="nav-button">Политика приватности</a>
+							<a href="/terms" className="nav-button">Условия использования</a>
+						</nav>
+					</div>
+				</footer>
 			</body>
 		</html>
 	);

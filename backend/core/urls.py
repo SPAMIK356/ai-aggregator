@@ -6,7 +6,8 @@ from .views import (
     NewsItemDetailView,
     NewsItemListView,
     AuthorColumnCreateView,
-    NewsItemCreateView,
+	NewsItemCreateView,
+	SitePageDetailView,
 )
 
 
@@ -17,6 +18,8 @@ urlpatterns = [
 	path("columns/", AuthorColumnListView.as_view(), name="column-list"),
 	path("columns/<int:pk>/", AuthorColumnDetailView.as_view(), name="column-detail"),
     path("columns/create/", AuthorColumnCreateView.as_view(), name="column-create"),
+	# Site pages by slug (footer/about/contact/privacy/terms)
+	path("pages/<slug:slug>/", SitePageDetailView.as_view(), name="page-detail"),
 ]
 
 

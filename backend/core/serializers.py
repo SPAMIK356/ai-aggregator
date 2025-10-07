@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AuthorColumn, NewsItem
+from .models import AuthorColumn, NewsItem, SitePage
 
 
 class NewsItemSerializer(serializers.ModelSerializer):
@@ -74,5 +74,11 @@ class AuthorColumnDetailSerializer(serializers.ModelSerializer):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
 			return url
 		return obj.image_url or ""
+
+
+class SitePageSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = SitePage
+		fields = ["slug", "title", "body", "updated_at"]
 
 

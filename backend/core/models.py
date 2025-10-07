@@ -141,3 +141,16 @@ class ParserConfig(TimeStampedModel):
 	def __str__(self) -> str:
 		return f"Parser ({'on' if self.is_enabled else 'off'})"
 
+
+class SitePage(TimeStampedModel):
+	"""Simple CMS-like page content by slug (e.g., footer, about, contact)."""
+	slug = models.SlugField(max_length=64, unique=True)
+	title = models.CharField(max_length=255)
+	body = models.TextField(blank=True)
+
+	class Meta:
+		indexes = [models.Index(fields=["slug"])]
+
+	def __str__(self) -> str:
+		return self.title
+
