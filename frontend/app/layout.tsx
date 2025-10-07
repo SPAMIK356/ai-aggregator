@@ -27,6 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 							Блоги от инсайдеров
 							</a>
 							<span className="spacer" />
+					<form action="/search" method="get" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						<input name="q" type="text" placeholder="Поиск…" aria-label="Поиск" style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elev)', color: '#fff' }} />
+					</form>
 						<a href="/contact" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 								<Image src={contactIcon} alt="Contacts" width={18} height={18} />
 							Контакты
