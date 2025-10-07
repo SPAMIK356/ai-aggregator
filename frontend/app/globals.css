@@ -132,6 +132,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .site-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); }
 .footer-nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .footer-nav .nav-button { opacity: .9; }
+.footer-about { color: #cfd5df; margin: 0 0 10px; line-height: 1.55; }
 .prose blockquote {
 	margin: 12px 0;
 	padding: 10px 12px;

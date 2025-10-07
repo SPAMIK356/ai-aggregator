@@ -40,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<main className="container">{children}</main>
 				<footer className="site-footer">
 					<div className="container">
-						<div id="footer-content" />
+						<p className="footer-about">
+							<strong>2049.news</strong> — медиа о будущем технологий, искусственного интеллекта и криптоэкономики. Мы публикуем новости, авторские колонки и аналитические материалы от практиков — разработчиков, предпринимателей и исследователей.
+						</p>
 						<nav className="footer-nav">
 							<a href="/columns" className="nav-button">Блоги от инсайдеров</a>
 							<a href="/news?tag=crypto" className="nav-button">Крипта</a>
