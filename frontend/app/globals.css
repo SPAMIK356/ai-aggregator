@@ -131,7 +131,23 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Footer */
 .site-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); background: #000; }
 .footer-nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-.footer-nav .nav-button { opacity: .9; }
+.footer-nav .nav-button {
+	opacity: .95;
+	padding: 6px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,.08);
+	background: rgba(255,255,255,.02);
+	box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset;
+}
+.footer-nav .nav-button:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+	box-shadow: 0 0 0 1px rgba(255,107,61,.25), 0 8px 24px rgba(255,107,61,.12);
+}
+.footer-nav .nav-button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
 .footer-about { color: #cfd5df; margin: 0 0 10px; line-height: 1.55; }
 .prose blockquote {
 	margin: 12px 0;
