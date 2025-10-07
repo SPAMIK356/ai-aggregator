@@ -13,25 +13,25 @@ from .serializers import (
 
 
 class NewsItemListView(generics.ListAPIView):
-    queryset = NewsItem.objects.order_by("-published_at", "-id")
+	queryset = NewsItem.objects.order_by("-published_at", "-id")
 	serializer_class = NewsItemSerializer
-    def get_queryset(self):
-        qs = super().get_queryset()
-        q = (self.request.query_params.get("q") or "").strip()
-        if q:
-            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-        return qs
+	def get_queryset(self):
+		qs = super().get_queryset()
+		q = (self.request.query_params.get("q") or "").strip()
+		if q:
+			qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+		return qs
 
 
 class AuthorColumnListView(generics.ListAPIView):
-    queryset = AuthorColumn.objects.order_by("-published_at", "-id")
+	queryset = AuthorColumn.objects.order_by("-published_at", "-id")
 	serializer_class = AuthorColumnListSerializer
-    def get_queryset(self):
-        qs = super().get_queryset()
-        q = (self.request.query_params.get("q") or "").strip()
-        if q:
-            qs = qs.filter(Q(title__icontains=q) | Q(content_body__icontains=q))
-        return qs
+	def get_queryset(self):
+		qs = super().get_queryset()
+		q = (self.request.query_params.get("q") or "").strip()
+		if q:
+			qs = qs.filter(Q(title__icontains=q) | Q(content_body__icontains=q))
+		return qs
 
 
 class AuthorColumnDetailView(generics.RetrieveAPIView):
