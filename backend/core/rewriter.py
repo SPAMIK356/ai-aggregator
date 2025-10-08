@@ -58,7 +58,7 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 	logger = logging.getLogger(__name__)
 
 	system_prompt = cfg.prompt or (
-		"You rewrite and clean AI/crypto articles into concise Russian. Return json with keys 'title', 'content', and 'hashtags' (array of slugs). Hashtags must be chosen ONLY from the allowed set provided."
+		"You rewrite and clean AI/crypto articles into concise Russian. Return json with keys 'title', 'content', 'hashtags' (array of slugs), and 'theme'. 'theme' MUST be one of: AI or CRYPTO. Hashtags must be chosen ONLY from the allowed set provided."
 	)
 	# Ensure the word 'json' (lowercase) is present to satisfy response_format requirements
 	if "json" not in system_prompt.lower():
@@ -70,6 +70,7 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 		"title": title,
 		"content": content,
 		"allowed_hashtags": allowed,
+		"allowed_themes": ["AI", "CRYPTO"],
 	}
 
 	last_err: Optional[Exception] = None
@@ -88,9 +89,12 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 			)
 			text = response.choices[0].message.content or "{}"
 			data = _lenient_json_parse(text) or {}
-			out = {"title": data.get("title") or title, "content": data.get("content") or content}
+			out: Dict[str, object] = {"title": data.get("title") or title, "content": data.get("content") or content}
 			if isinstance(data.get("hashtags"), list):
 				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+			theme_val = str(data.get("theme") or "").strip().upper()
+			if theme_val in ("AI", "CRYPTO"):
+				out["theme"] = theme_val
 			return out
 		except BadRequestError as e:
 			msg = str(e)
@@ -112,6 +116,9 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 					out = {"title": data.get("title") or title, "content": data.get("content") or content}
 					if isinstance(data.get("hashtags"), list):
 						out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+					theme_val = str(data.get("theme") or "").strip().upper()
+					if theme_val in ("AI", "CRYPTO"):
+						out["theme"] = theme_val
 					return out
 				except Exception as e2:
 					last_err = e2
@@ -130,6 +137,9 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 				out = {"title": data.get("title") or title, "content": data.get("content") or content}
 				if isinstance(data.get("hashtags"), list):
 					out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+				theme_val = str(data.get("theme") or "").strip().upper()
+				if theme_val in ("AI", "CRYPTO"):
+					out["theme"] = theme_val
 				return out
 			except Exception as e3:
 				last_err = e3

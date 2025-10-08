@@ -192,12 +192,15 @@ def run_parser() -> dict:
 					if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
 						skipped += 1
 						continue
-					NewsItem.objects.create(
+                    # Pick theme from source.default_theme (fallback to AI)
+                    theme_val = source.default_theme or NewsItem.Theme.AI
+                    NewsItem.objects.create(
 						title=title or link,
 						original_url=link,
 						description=description[:2000],
 						published_at=published_at,
-						source_name=source.title or source.url,
+                        source_name=source.title or source.url,
+                        theme=theme_val,
 					)
 					created += 1
 			except IntegrityError:
@@ -361,6 +364,14 @@ def fetch_telegram_channels() -> dict:
 							# If anything fails, fall back to t.me permalink
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							logger.exception("TG image download failed; using permalink url=%s", img_url)
+                        # Determine theme: use AI output if present else channel default else AI
+                        theme_val = None
+                        try:
+                            t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+                            if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+                                theme_val = t.strip().upper()
+                        except Exception:
+                            theme_val = None
                         n = NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
@@ -368,7 +379,7 @@ def fetch_telegram_channels() -> dict:
 							image_url=img_url,
 							published_at=published_at,
                             source_name=ch.title or ch.username,
-                            theme=(ch.default_theme or NewsItem.Theme.AI),
+                            theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
 						)
                         # Attach hashtags if provided and valid
                         try:
@@ -502,6 +513,14 @@ def fetch_websites() -> dict:
 											img = f"{media_url}{rel.as_posix()}"
 								except Exception:
 									logger.exception("WEB image download failed")
+                        # Determine theme: use AI output if present else website default else AI
+                        theme_val = None
+                        try:
+                            t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+                            if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+                                theme_val = t.strip().upper()
+                        except Exception:
+                            theme_val = None
                         n = NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
@@ -509,7 +528,7 @@ def fetch_websites() -> dict:
 							image_url=img,
 							published_at=timezone.now(),
                             source_name=ws.name,
-                            theme=(ws.default_theme or NewsItem.Theme.AI),
+                            theme=(theme_val or ws.default_theme or NewsItem.Theme.AI),
 						)
                         # Attach hashtags if provided and valid
                         try:
