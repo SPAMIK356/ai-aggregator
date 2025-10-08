@@ -143,7 +143,7 @@ TG_API_HASH = os.getenv("TG_API_HASH")
 TG_STRING_SESSION = os.getenv("TG_STRING_SESSION")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 REWRITER_ENABLED = os.getenv("REWRITER_ENABLED", "0") == "1"
-
+HASHTAG_SLUG_CHOICES = [("ai","AI"), ("crypto","CRYPTO")]
 # Celery beat schedule configured in celery.py
 
 
