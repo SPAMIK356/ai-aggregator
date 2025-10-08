@@ -44,9 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 							<strong>2049.news</strong> — медиа о будущем технологий, искусственного интеллекта и криптоэкономики. Мы публикуем новости, авторские колонки и аналитические материалы от практиков — разработчиков, предпринимателей и исследователей.
 						</p>
 						<nav className="footer-nav">
-							<a href="/columns" className="nav-button">Блоги от инсайдеров</a>
-							<a href="/news?tag=crypto" className="nav-button">Крипта</a>
-							<a href="/news?tag=ai" className="nav-button">ИИ</a>
+							<a href="/ai" className="nav-button">ИИ</a>
+							<a href="/crypto" className="nav-button">Крипта</a>
 							<a href="/contact" className="nav-button">Контакты</a>
 							<a href="/about" className="nav-button">О нас</a>
 							<a href="/privacy" className="nav-button">Политика приватности</a>
