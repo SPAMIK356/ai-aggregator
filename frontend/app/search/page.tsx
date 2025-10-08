@@ -28,8 +28,8 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 		fetchJson<{ results: UnifiedItem[] }>(`${api}/posts/?theme=CRYPTO${param}`),
 	]);
 
-	const ai = aiData.results?.[0];
-	const crypto = cryptoData.results?.[0];
+	const ai = (aiData.results || []).slice(0, 10);
+	const crypto = (cryptoData.results || []).slice(0, 10);
 
 	return (
 		<div>
@@ -38,18 +38,20 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 				<section style={{ textAlign: 'center' }}>
 					<h2 className="section-title">ИИ</h2>
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-						{ai ? (
-							<a href={ai.type === 'news' ? `/news/${ai.id}` : `/columns/${ai.id}`} className="card" style={{ width: '100%' }}>
-								{ai.resolved_image && (
-									<div style={{ marginBottom: 8 }}>
-										<img src={ai.resolved_image} alt="" className="thumb" />
-									</div>
-								)}
-								<div className="card-title">{ai.title}</div>
-								{ai.snippet && (
-									<p className="snippet">{(() => { const t = stripHtml(ai.snippet || ''); return t.length > 220 ? t.slice(0, 220) + '…' : t; })()}</p>
-								)}
-							</a>
+						{ai.length ? (
+							ai.map(item => (
+								<a key={`${item.type}-${item.id}`} href={item.type === 'news' ? `/news/${item.id}` : `/columns/${item.id}`} className="card" style={{ width: '100%' }}>
+									{item.resolved_image && (
+										<div style={{ marginBottom: 8 }}>
+											<img src={item.resolved_image} alt="" className="thumb" />
+										</div>
+									)}
+									<div className="card-title">{item.title}</div>
+									{item.snippet && (
+										<p className="snippet">{(() => { const t = stripHtml(item.snippet || ''); return t.length > 220 ? t.slice(0, 220) + '…' : t; })()}</p>
+									)}
+								</a>
+							))
 						) : (
 							<p className="meta" style={{ opacity: .7 }}>Ничего не найдено</p>
 						)}
@@ -59,18 +61,20 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 				<section style={{ textAlign: 'center' }}>
 					<h2 className="section-title">Крипта</h2>
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-						{crypto ? (
-							<a href={crypto.type === 'news' ? `/news/${crypto.id}` : `/columns/${crypto.id}`} className="card" style={{ width: '100%' }}>
-								{crypto.resolved_image && (
-									<div style={{ marginBottom: 8 }}>
-										<img src={crypto.resolved_image} alt="" className="thumb" />
-									</div>
-								)}
-								<div className="card-title">{crypto.title}</div>
-								{crypto.snippet && (
-									<p className="snippet">{(() => { const t = stripHtml(crypto.snippet || ''); return t.length > 220 ? t.slice(0, 220) + '…' : t; })()}</p>
-								)}
-							</a>
+						{crypto.length ? (
+							crypto.map(item => (
+								<a key={`${item.type}-${item.id}`} href={item.type === 'news' ? `/news/${item.id}` : `/columns/${item.id}`} className="card" style={{ width: '100%' }}>
+									{item.resolved_image && (
+										<div style={{ marginBottom: 8 }}>
+											<img src={item.resolved_image} alt="" className="thumb" />
+										</div>
+									)}
+									<div className="card-title">{item.title}</div>
+									{item.snippet && (
+										<p className="snippet">{(() => { const t = stripHtml(item.snippet || ''); return t.length > 220 ? t.slice(0, 220) + '…' : t; })()}</p>
+									)}
+								</a>
+							))
 						) : (
 							<p className="meta" style={{ opacity: .7 }}>Ничего не найдено</p>
 						)}
