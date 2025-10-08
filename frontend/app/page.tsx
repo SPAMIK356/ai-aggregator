@@ -16,31 +16,20 @@ function stripHtml(input: string): string {
   return (input || "").replace(/<[^>]+>/g, "");
 }
 
-type NewsItem = {
+type UnifiedItem = {
   id: number;
+  type: 'news' | 'column';
   title: string;
-  description: string;
+  snippet: string;
   published_at: string;
-  source_name: string;
-  image_url?: string;
   resolved_image?: string;
-};
-
-type ColumnItem = {
-  id: number;
-  title: string;
-  author_name: string;
-  published_at: string;
-  image_url?: string;
-  resolved_image?: string;
+  theme: 'AI' | 'CRYPTO';
+  hashtags: { slug: string; name: string }[];
 };
 
 export default async function HomePage() {
   const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
-  const [newsData, columnsData] = await Promise.all([
-    safeFetchList<NewsItem>(`${api}/news/?page=1`),
-    safeFetchList<ColumnItem>(`${api}/columns/?page=1`),
-  ]);
+  const unified = await safeFetchList<UnifiedItem>(`${api}/posts/?page=1`);
 
   // Build a dynamic ticker date: real day/month, fixed year 2049
   const now = new Date();
@@ -65,33 +54,37 @@ export default async function HomePage() {
       <div className="ticker" aria-hidden>
         <div className="ticker-track">
           <span className="ticker-item">{tickerDate}</span>
-          {newsData.results.slice(0, 8).map((n) => (
+          {unified.results.slice(0, 8).map((n) => (
             <span key={`t1-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
           <span className="ticker-item">{tickerDate}</span>
-          {newsData.results.slice(0, 8).map((n) => (
+          {unified.results.slice(0, 8).map((n) => (
             <span key={`t2-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
       <section>
-        <h2 className="section-title">Новости будущего</h2>
+        <h2 className="section-title">Лента</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {newsData.results.map((n) => (
-            <a key={n.id} href={`/news/${n.id}`} className="card">
-              {(n.resolved_image || n.image_url) && (
+          {unified.results.map((p) => (
+            <a key={`${p.type}-${p.id}`} href={p.type === 'news' ? `/news/${p.id}` : `/columns/${p.id}`} className="card">
+              {p.resolved_image && (
                 <div style={{ marginBottom: 8 }}>
-                  <img src={n.resolved_image || n.image_url!} alt="" className="thumb" />
+                  <img src={p.resolved_image} alt="" className="thumb" />
                 </div>
               )}
-              <div className="card-title">{n.title}</div>
-              <div className="meta">{n.source_name} · {new Date(n.published_at).toLocaleString('ru-RU')}</div>
-              {n.description && (
+              <div className="card-title">{p.title}</div>
+              <div className="meta">
+                <span style={{ marginRight: 8, padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}>{p.theme}</span>
+                {p.hashtags.slice(0, 3).map(h => (
+                  <span key={h.slug} style={{ marginRight: 6, opacity: .8, fontSize: 12 }}>#{h.name}</span>
+                ))}
+              </div>
+              {p.snippet && (
                 <p className="snippet">
                   {(() => {
-                    const text = stripHtml(n.description);
+                    const text = stripHtml(p.snippet);
                     return text.length > 220 ? text.slice(0, 220) + '…' : text;
                   })()}
                 </p>
@@ -100,24 +93,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      <section>
-        <h2 className="section-title">Блоги от инсайдеров</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {columnsData.results.map((c) => (
-            <a key={c.id} href={`/columns/${c.id}`} className="card">
-              {(c.resolved_image || c.image_url) && (
-                <div style={{ marginBottom: 8 }}>
-                  <img src={c.resolved_image || c.image_url!} alt="" className="thumb" />
-                </div>
-              )}
-              <div className="card-title">{c.title}</div>
-              <div className="meta">{c.author_name} · {new Date(c.published_at).toLocaleString('ru-RU')}</div>
-            </a>
-          ))}
-        </div>
-      </section>
-      </div>
 
     </>
   );

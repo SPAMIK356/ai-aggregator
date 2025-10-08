@@ -18,13 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<div className="container">
 					<nav className="nav">
 						<a href="/" className="brand">2049.news</a>
-						<a href="/news" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-								<Image src={newsIcon} alt="News" width={18} height={18} />
-							Новости будущего
+						<a href="/ai" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src={newsIcon} alt="AI" width={18} height={18} />
+							ИИ
 							</a>
-						<a href="/columns" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-								<Image src={authorsIcon} alt="Author columns" width={18} height={18} />
-							Блоги от инсайдеров
+						<a href="/crypto" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src={authorsIcon} alt="Crypto" width={18} height={18} />
+							Крипта
 							</a>
 							<span className="spacer" />
 					<form action="/search" method="get" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

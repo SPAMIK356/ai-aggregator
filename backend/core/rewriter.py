@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import re
 import time
 
@@ -10,7 +10,7 @@ from django.conf import settings
 from openai import OpenAI
 from openai import BadRequestError, APITimeoutError, RateLimitError
 
-from .models import RewriterConfig
+from .models import RewriterConfig, Hashtag
 
 
 def get_active_config() -> Optional[RewriterConfig]:
@@ -41,7 +41,7 @@ def _lenient_json_parse(text: str) -> Optional[Dict[str, str]]:
 	return None
 
 
-def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
+def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 	cfg = get_active_config()
 	if not cfg:
 		return None
@@ -58,15 +58,18 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 	logger = logging.getLogger(__name__)
 
 	system_prompt = cfg.prompt or (
-		"You rewrite and clean AI-related articles into concise Russian. Return json with keys 'title' and 'content'."
+		"You rewrite and clean AI/crypto articles into concise Russian. Return json with keys 'title', 'content', and 'hashtags' (array of slugs). Hashtags must be chosen ONLY from the allowed set provided."
 	)
 	# Ensure the word 'json' (lowercase) is present to satisfy response_format requirements
 	if "json" not in system_prompt.lower():
 		system_prompt = system_prompt.strip() + " Return json object with keys 'title' and 'content'."
 	# No trimming by env; send full content (API timeouts still apply)
+	# Provide active hashtag slugs as the allowed enum set
+	allowed = list(Hashtag.objects.filter(is_active=True).values_list("slug", flat=True))
 	user_payload = {
 		"title": title,
 		"content": content,
+		"allowed_hashtags": allowed,
 	}
 
 	last_err: Optional[Exception] = None
@@ -85,7 +88,10 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 			)
 			text = response.choices[0].message.content or "{}"
 			data = _lenient_json_parse(text) or {}
-			return {"title": data.get("title") or title, "content": data.get("content") or content}
+			out = {"title": data.get("title") or title, "content": data.get("content") or content}
+			if isinstance(data.get("hashtags"), list):
+				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+			return out
 		except BadRequestError as e:
 			msg = str(e)
 			logger.warning("Rewriter BadRequest on model=%s: %s", cfg.model, msg)
@@ -103,7 +109,10 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 					)
 					text = response.choices[0].message.content or "{}"
 					data = _lenient_json_parse(text) or {}
-					return {"title": data.get("title") or title, "content": data.get("content") or content}
+					out = {"title": data.get("title") or title, "content": data.get("content") or content}
+					if isinstance(data.get("hashtags"), list):
+						out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+					return out
 				except Exception as e2:
 					last_err = e2
 					logger.warning("Rewriter fallback model failed: %s", e2)
@@ -118,7 +127,10 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, str]]:
 				)
 				text = response.choices[0].message.content or "{}"
 				data = _lenient_json_parse(text) or {}
-				return {"title": data.get("title") or title, "content": data.get("content") or content}
+				out = {"title": data.get("title") or title, "content": data.get("content") or content}
+				if isinstance(data.get("hashtags"), list):
+					out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+				return out
 			except Exception as e3:
 				last_err = e3
 		except (APITimeoutError, RateLimitError) as e:

@@ -19,6 +19,8 @@ class NewsSource(TimeStampedModel):
 	title = models.CharField(max_length=255, blank=True)
 	url = models.URLField(unique=True)
 	is_active = models.BooleanField(default=True)
+	# Optional default theme to assign to items ingested from this source
+	default_theme = models.CharField(max_length=16, choices=[("AI", "AI"), ("CRYPTO", "CRYPTO")], blank=True)
 
 	def __str__(self) -> str:
 		return self.title or self.url
@@ -33,6 +35,13 @@ class NewsItem(TimeStampedModel):
 	image_url = models.CharField(max_length=1000, blank=True)
 	image_file = models.ImageField(upload_to="news/", null=True, blank=True)
 
+	class Theme(models.TextChoices):
+		AI = "AI", "AI"
+		CRYPTO = "CRYPTO", "CRYPTO"
+
+	theme = models.CharField(max_length=16, choices=Theme.choices, default=Theme.AI, db_index=True)
+	hashtags = models.ManyToManyField("Hashtag", blank=True, related_name="news_items")
+
 	def __str__(self) -> str:
 		return self.title
 
@@ -44,9 +53,28 @@ class AuthorColumn(TimeStampedModel):
 	published_at = models.DateTimeField(default=timezone.now, db_index=True)
 	image_url = models.CharField(max_length=1000, blank=True)
 	image_file = models.ImageField(upload_to="columns/", null=True, blank=True)
+	theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, default=NewsItem.Theme.AI, db_index=True)
+	hashtags = models.ManyToManyField("Hashtag", blank=True, related_name="author_columns")
 
 	def __str__(self) -> str:
 		return f"{self.title} — {self.author_name}"
+
+
+class Hashtag(TimeStampedModel):
+	"""Admin-editable hashtag enum used to tag posts and find similar items.
+
+	- slug: unique, lowercase stable identifier (e.g. "ai", "crypto")
+	- name: display label (e.g. "ИИ", "Крипта")
+	"""
+	slug = models.SlugField(max_length=64, unique=True)
+	name = models.CharField(max_length=128)
+	is_active = models.BooleanField(default=True)
+
+	class Meta:
+		indexes = [models.Index(fields=["slug"])]
+
+	def __str__(self) -> str:
+		return self.name
 
 
 class OutboxEvent(TimeStampedModel):
@@ -79,6 +107,8 @@ class TelegramChannel(TimeStampedModel):
 	title = models.CharField(max_length=255, blank=True)
 	is_active = models.BooleanField(default=True)
 	last_message_id = models.BigIntegerField(null=True, blank=True)
+	# Optional default theme to assign to items from this channel
+	default_theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, blank=True)
 
 	def __str__(self) -> str:
 		return self.title or self.username
@@ -111,6 +141,8 @@ class WebsiteSource(TimeStampedModel):
 	url_selector = models.CharField(max_length=255)
 	desc_selector = models.CharField(max_length=255, blank=True)
 	image_selector = models.CharField(max_length=255, blank=True)
+	# Optional default theme to assign to items from this website
+	default_theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, blank=True)
 
 	def __str__(self) -> str:
 		return self.name

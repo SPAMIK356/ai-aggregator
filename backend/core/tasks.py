@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import NewsItem, NewsSource
-from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig
+from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig, Hashtag
 from bs4 import BeautifulSoup
 from PIL import Image, ImageOps
 from urllib.parse import urlparse
@@ -312,7 +312,7 @@ def fetch_telegram_channels() -> dict:
 									skipped += 1
 									continue
 							try:
-								rew = rewrite_article(orig_title, orig_body)
+                        rew = rewrite_article(orig_title, orig_body)
 							except Exception:
 								rew = None
 							if not rew:
@@ -361,14 +361,25 @@ def fetch_telegram_channels() -> dict:
 							# If anything fails, fall back to t.me permalink
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							logger.exception("TG image download failed; using permalink url=%s", img_url)
-						NewsItem.objects.create(
+                        n = NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
 							description=(rew.get("content") or orig_body)[:10000],
 							image_url=img_url,
 							published_at=published_at,
-							source_name=ch.title or ch.username,
+                            source_name=ch.title or ch.username,
+                            theme=(ch.default_theme or NewsItem.Theme.AI),
 						)
+                        # Attach hashtags if provided and valid
+                        try:
+                            tags = rew.get("hashtags") if isinstance(rew, dict) else None
+                            if isinstance(tags, list) and tags:
+                                slugs = [str(s).strip().lower() for s in tags if s]
+                                objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+                                if objs:
+                                    n.hashtags.add(*objs)
+                        except Exception:
+                            logger.exception("Attach hashtags failed (TG)")
 						logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
 						created += 1
 					except IntegrityError:
@@ -491,14 +502,25 @@ def fetch_websites() -> dict:
 											img = f"{media_url}{rel.as_posix()}"
 								except Exception:
 									logger.exception("WEB image download failed")
-						NewsItem.objects.create(
+                        n = NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
 							description=(rew.get("content") or desc or "")[:10000],
 							image_url=img,
 							published_at=timezone.now(),
-							source_name=ws.name,
+                            source_name=ws.name,
+                            theme=(ws.default_theme or NewsItem.Theme.AI),
 						)
+                        # Attach hashtags if provided and valid
+                        try:
+                            tags = rew.get("hashtags") if isinstance(rew, dict) else None
+                            if isinstance(tags, list) and tags:
+                                slugs = [str(s).strip().lower() for s in tags if s]
+                                objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+                                if objs:
+                                    n.hashtags.add(*objs)
+                        except Exception:
+                            logger.exception("Attach hashtags failed (WEB)")
 						created += 1
 				except IntegrityError:
 					skipped += 1

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag
 
 
 @admin.register(NewsSource)
@@ -12,19 +12,21 @@ class NewsSourceAdmin(admin.ModelAdmin):
 
 @admin.register(NewsItem)
 class NewsItemAdmin(admin.ModelAdmin):
-	list_display = ("title", "source_name", "published_at", "created_at")
-	list_filter = ("source_name",)
+	list_display = ("title", "source_name", "theme", "published_at", "created_at")
+	list_filter = ("source_name", "theme")
 	search_fields = ("title", "original_url", "source_name")
 	readonly_fields = ("created_at", "updated_at")
-	fields = ("title", "original_url", "description", "published_at", "source_name", "image_url", "image_file", "created_at", "updated_at")
+	filter_horizontal = ("hashtags",)
+	fields = ("title", "original_url", "description", "published_at", "source_name", "theme", "hashtags", "image_url", "image_file", "created_at", "updated_at")
 
 
 @admin.register(AuthorColumn)
 class AuthorColumnAdmin(admin.ModelAdmin):
-	list_display = ("title", "author_name", "published_at", "created_at")
+	list_display = ("title", "author_name", "theme", "published_at", "created_at")
 	search_fields = ("title", "author_name")
 	readonly_fields = ("created_at", "updated_at")
-	fields = ("title", "author_name", "content_body", "published_at", "image_url", "image_file", "created_at", "updated_at")
+	filter_horizontal = ("hashtags",)
+	fields = ("title", "author_name", "content_body", "published_at", "theme", "hashtags", "image_url", "image_file", "created_at", "updated_at")
 
 
 @admin.register(OutboxEvent)
@@ -40,17 +42,17 @@ class OutboxEventAdmin(admin.ModelAdmin):
 
 @admin.register(TelegramChannel)
 class TelegramChannelAdmin(admin.ModelAdmin):
-	list_display = ("username", "title", "is_active", "last_message_id", "updated_at")
-	list_filter = ("is_active",)
+	list_display = ("username", "title", "is_active", "default_theme", "last_message_id", "updated_at")
+	list_filter = ("is_active", "default_theme")
 	search_fields = ("username", "title")
 
 
 @admin.register(WebsiteSource)
 class WebsiteSourceAdmin(admin.ModelAdmin):
-	list_display = ("name", "url", "is_active", "created_at")
-	list_filter = ("is_active",)
+	list_display = ("name", "url", "is_active", "default_theme", "created_at")
+	list_filter = ("is_active", "default_theme")
 	search_fields = ("name", "url")
-	fields = ("name", "url", "is_active", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
+	fields = ("name", "url", "is_active", "default_theme", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
 
 
 @admin.register(RewriterConfig)
@@ -69,6 +71,13 @@ class KeywordFilterAdmin(admin.ModelAdmin):
 class ParserConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "min_chars", "updated_at")
 	readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(Hashtag)
+class HashtagAdmin(admin.ModelAdmin):
+	list_display = ("slug", "name", "is_active", "updated_at")
+	list_filter = ("is_active",)
+	search_fields = ("slug", "name")
 
 
 @admin.register(SitePage)
