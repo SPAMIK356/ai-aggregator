@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django import forms
+from django.conf import settings as dj_settings
 
 from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag
 
@@ -74,7 +76,38 @@ class ParserConfigAdmin(admin.ModelAdmin):
 
 
 @admin.register(Hashtag)
+class HashtagAdminForm(forms.ModelForm):
+	"""Render slug as a dropdown of allowed options to avoid manual input errors.
+
+	Read from settings.HASHTAG_SLUG_CHOICES if provided. Accepts either:
+	- ["ai", "crypto", ...] or
+	- [("ai", "AI"), ("crypto", "CRYPTO"), ...]
+	"""
+	slug = forms.ChoiceField(choices=(), required=True)
+
+	class Meta:
+		model = Hashtag
+		fields = "__all__"
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		allowed = getattr(dj_settings, "HASHTAG_SLUG_CHOICES", ["ai", "crypto"]) or ["ai", "crypto"]
+		choices = []
+		if allowed and isinstance(allowed, (list, tuple)):
+			first = allowed[0] if len(allowed) > 0 else None
+			if isinstance(first, (list, tuple)) and len(first) >= 1:
+				choices = [(str(a[0]), str(a[1] if len(a) > 1 else a[0])) for a in allowed]
+			else:
+				choices = [(str(x), str(x)) for x in allowed]
+		# Ensure existing value stays selectable
+		current = getattr(self.instance, "slug", None)
+		if current and current not in [c[0] for c in choices]:
+			choices = [(current, current)] + choices
+		self.fields["slug"].choices = choices
+
+
 class HashtagAdmin(admin.ModelAdmin):
+	form = HashtagAdminForm
 	list_display = ("slug", "name", "is_active", "updated_at")
 	list_filter = ("is_active",)
 	search_fields = ("slug", "name")
