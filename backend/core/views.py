@@ -1,6 +1,7 @@
 from rest_framework import generics, parsers, status
 from rest_framework.response import Response
 from django.db import transaction
+import random
 
 from .models import AuthorColumn, NewsItem, SitePage, Hashtag
 from django.db.models import Q
@@ -94,15 +95,31 @@ class SimilarPostsView(generics.GenericAPIView):
 		item_id = int(request.query_params.get("id") or 0)
 		limit = int(request.query_params.get("limit") or 2)
 		limit = max(1, min(10, limit))
+		def select_similar(model, base_obj):
+			base_tags = list(base_obj.hashtags.values_list("id", flat=True)) if hasattr(base_obj, "hashtags") else []
+			qs_all = model.objects.exclude(pk=base_obj.pk).filter(theme=base_obj.theme)
+			# Prefer same-theme + shared hashtags
+			picked = []
+			if base_tags:
+				qs_tags = qs_all.filter(hashtags__in=base_tags).distinct().order_by("-published_at", "-id")
+				candidates = list(qs_tags[:15])
+				if candidates:
+					k = min(limit, len(candidates))
+					picked = random.sample(candidates, k)
+			# If not enough, fill randomly from recent same-theme posts (exclude already picked)
+			if len(picked) < limit:
+				qs_recent = qs_all.order_by("-published_at", "-id")
+				recent = [o for o in list(qs_recent[:15]) if o not in picked]
+				if recent:
+					need = min(limit - len(picked), len(recent))
+					picked.extend(random.sample(recent, need))
+			return picked[:limit]
+
 		if item_type == "column":
 			base = AuthorColumn.objects.filter(pk=item_id).first()
 			if not base:
 				return Response({"results": []})
-			base_tags = list(base.hashtags.values_list("id", flat=True)) if hasattr(base, "hashtags") else []
-			qs = AuthorColumn.objects.exclude(pk=base.pk).filter(theme=base.theme)
-			if base_tags:
-				qs = qs.filter(hashtags__in=base_tags).distinct()
-			qs = qs.order_by("-published_at", "-id")[:limit]
+			choices = select_similar(AuthorColumn, base)
 			results = [{
 				"id": c.id,
 				"type": "column",
@@ -111,17 +128,13 @@ class SimilarPostsView(generics.GenericAPIView):
 				"theme": c.theme,
 				"hashtags": [{"slug": h.slug, "name": h.name} for h in getattr(c, 'hashtags').all()] if hasattr(c, 'hashtags') else [],
 				"published_at": c.published_at,
-			} for c in qs]
+			} for c in choices]
 			return Response({"results": results})
 		else:
 			base = NewsItem.objects.filter(pk=item_id).first()
 			if not base:
 				return Response({"results": []})
-			base_tags = list(base.hashtags.values_list("id", flat=True)) if hasattr(base, "hashtags") else []
-			qs = NewsItem.objects.exclude(pk=base.pk).filter(theme=base.theme)
-			if base_tags:
-				qs = qs.filter(hashtags__in=base_tags).distinct()
-			qs = qs.order_by("-published_at", "-id")[:limit]
+			choices = select_similar(NewsItem, base)
 			results = [{
 				"id": n.id,
 				"type": "news",
@@ -130,7 +143,7 @@ class SimilarPostsView(generics.GenericAPIView):
 				"theme": n.theme,
 				"hashtags": [{"slug": h.slug, "name": h.name} for h in getattr(n, 'hashtags').all()] if hasattr(n, 'hashtags') else [],
 				"published_at": n.published_at,
-			} for n in qs]
+			} for n in choices]
 			return Response({"results": results})
 
 
