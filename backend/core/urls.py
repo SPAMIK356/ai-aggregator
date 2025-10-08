@@ -10,6 +10,8 @@ from .views import (
 	SitePageDetailView,
 	UnifiedPostListView,
 	SimilarPostsView,
+	HashtagListView,
+	ThemeListView,
 )
 
 
@@ -22,6 +24,8 @@ urlpatterns = [
     path("columns/create/", AuthorColumnCreateView.as_view(), name="column-create"),
 	path("posts/", UnifiedPostListView.as_view(), name="post-list"),
 	path("posts/similar/", SimilarPostsView.as_view(), name="post-similar"),
+	path("hashtags/", HashtagListView.as_view(), name="hashtag-list"),
+	path("meta/themes/", ThemeListView.as_view(), name="theme-list"),
 	# Site pages by slug (footer/about/contact/privacy/terms)
 	path("pages/<slug:slug>/", SitePageDetailView.as_view(), name="page-detail"),
 ]

@@ -3,6 +3,12 @@ from rest_framework import serializers
 from .models import AuthorColumn, NewsItem, SitePage, Hashtag
 
 
+class HashtagSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Hashtag
+		fields = ["id", "slug", "name", "is_active", "updated_at"]
+
+
 class NewsItemSerializer(serializers.ModelSerializer):
 	resolved_image = serializers.SerializerMethodField()
 	hashtags = serializers.SerializerMethodField()

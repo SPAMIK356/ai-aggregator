@@ -9,7 +9,8 @@ from .serializers import (
 	AuthorColumnListSerializer,
 	NewsItemDetailSerializer,
 	NewsItemSerializer,
-    SitePageSerializer,
+	SitePageSerializer,
+	HashtagSerializer,
 )
 
 
@@ -178,9 +179,21 @@ class AuthorColumnCreateView(generics.CreateAPIView):
 					hashtags = _json.loads(hashtags)
 				except Exception:
 					hashtags = [h.strip() for h in hashtags.split(",") if h.strip()]
+			ids = request.data.getlist("hashtag_ids") if hasattr(request.data, "getlist") else request.data.get("hashtag_ids")
+			if isinstance(ids, str):
+				import json as _json
+				try:
+					ids = _json.loads(ids)
+				except Exception:
+					ids = [int(x) for x in ids.split(",") if str(x).strip().isdigit()]
 			if isinstance(hashtags, list) and hashtags:
 				from .models import Hashtag
 				objs = list(Hashtag.objects.filter(slug__in=[str(s).lower() for s in hashtags], is_active=True))
+				if objs:
+					obj.hashtags.add(*objs)
+			elif isinstance(ids, list) and ids:
+				from .models import Hashtag
+				objs = list(Hashtag.objects.filter(id__in=ids, is_active=True))
 				if objs:
 					obj.hashtags.add(*objs)
 		except Exception:
@@ -231,13 +244,38 @@ class NewsItemCreateView(generics.CreateAPIView):
 					hashtags = _json.loads(hashtags)
 				except Exception:
 					hashtags = [h.strip() for h in hashtags.split(",") if h.strip()]
+			ids = request.data.getlist("hashtag_ids") if hasattr(request.data, "getlist") else request.data.get("hashtag_ids")
+			if isinstance(ids, str):
+				import json as _json
+				try:
+					ids = _json.loads(ids)
+				except Exception:
+					ids = [int(x) for x in ids.split(",") if str(x).strip().isdigit()]
 			if isinstance(hashtags, list) and hashtags:
 				from .models import Hashtag
 				objs = list(Hashtag.objects.filter(slug__in=[str(s).lower() for s in hashtags], is_active=True))
 				if objs:
 					obj.hashtags.add(*objs)
+			elif isinstance(ids, list) and ids:
+				from .models import Hashtag
+				objs = list(Hashtag.objects.filter(id__in=ids, is_active=True))
+				if objs:
+					obj.hashtags.add(*objs)
 		except Exception:
 			pass
+
+
+class HashtagListView(generics.ListAPIView):
+	queryset = Hashtag.objects.filter(is_active=True).order_by("slug")
+	serializer_class = HashtagSerializer
+
+
+class ThemeListView(generics.GenericAPIView):
+	def get(self, request, *args, **kwargs):
+		return Response({"results": [
+			{"key": NewsItem.Theme.AI, "label": "AI"},
+			{"key": NewsItem.Theme.CRYPTO, "label": "CRYPTO"},
+		]})
 		if image_file:
 			obj.image_file = image_file
 			obj.save(update_fields=["image_file", "updated_at"])
