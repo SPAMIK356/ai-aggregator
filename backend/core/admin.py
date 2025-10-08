@@ -75,7 +75,6 @@ class ParserConfigAdmin(admin.ModelAdmin):
 	readonly_fields = ("created_at", "updated_at")
 
 
-@admin.register(Hashtag)
 class HashtagAdminForm(forms.ModelForm):
 	"""Render slug as a dropdown of allowed options to avoid manual input errors.
 
@@ -106,6 +105,7 @@ class HashtagAdminForm(forms.ModelForm):
 		self.fields["slug"].choices = choices
 
 
+@admin.register(Hashtag)
 class HashtagAdmin(admin.ModelAdmin):
 	form = HashtagAdminForm
 	list_display = ("slug", "name", "is_active", "updated_at")
