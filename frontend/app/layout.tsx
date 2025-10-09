@@ -18,13 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<div className="container">
 					<nav className="nav">
 						<a href="/" className="brand">2049.news</a>
-						<a href="/ai" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-								<Image src={newsIcon} alt="AI" width={18} height={18} />
-							ИИ
+						<a href="/news" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src={newsIcon} alt="News" width={18} height={18} />
+							Новости будущего
 							</a>
-						<a href="/crypto" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-								<Image src={authorsIcon} alt="Crypto" width={18} height={18} />
-							Крипта
+						<a href="/columns" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+								<Image src={authorsIcon} alt="Author columns" width={18} height={18} />
+							Блоги от инсайдеров
 							</a>
 							<span className="spacer" />
 					<form action="/search" method="get" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -44,8 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 							<strong>2049.news</strong> — медиа о будущем технологий, искусственного интеллекта и криптоэкономики. Мы публикуем новости, авторские колонки и аналитические материалы от практиков — разработчиков, предпринимателей и исследователей.
 						</p>
 						<nav className="footer-nav">
-							<a href="/ai" className="nav-button">ИИ</a>
-							<a href="/crypto" className="nav-button">Крипта</a>
+							<a href="/news" className="nav-button">Новости будущего</a>
+							<a href="/columns" className="nav-button">Блоги от инсайдеров</a>
 							<a href="/contact" className="nav-button">Контакты</a>
 							<a href="/about" className="nav-button">О нас</a>
 							<a href="/privacy" className="nav-button">Политика приватности</a>
