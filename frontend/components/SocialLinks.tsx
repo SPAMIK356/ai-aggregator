@@ -1,21 +1,16 @@
-"use client";
+import React from "react";
 
-import React, { useEffect, useState } from "react";
+async function fetchJson<T>(url: string): Promise<T> {
+	const res = await fetch(url, { cache: 'no-store' });
+	if (!res.ok) throw new Error('Failed to fetch');
+	return res.json();
+}
 
-type LinkItem = { id: number; name: string; url: string; icon_url?: string };
-
-export default function SocialLinks() {
-	const [items, setItems] = useState<LinkItem[]>([]);
-	useEffect(() => {
-		const origin = typeof window !== 'undefined' ? window.location.origin : '';
-		const api = process.env.NEXT_PUBLIC_API_BASE || (origin ? `${origin}/api` : "http://backend:8000/api");
-		fetch(`${api}/social-links/`, { cache: "no-store" })
-			.then(r => r.json())
-			.then(d => setItems(d.results || []))
-			.catch(() => setItems([]));
-	}, []);
-
-	if (!items.length) return null;
+export default async function SocialLinks() {
+	const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
+	const data = await fetchJson<{ results: { id: number; name: string; url: string; icon_url?: string }[] }>(`${api}/social-links/`);
+	const items = data.results || [];
+	if (!items.length) return null as any;
 	return (
 		<div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
 			{items.map(it => (

@@ -28,14 +28,12 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 		if (loading || finished) return;
 		setLoading(true);
 		try {
-			const origin = typeof window !== 'undefined' ? window.location.origin : '';
-			const apiBase = process.env.NEXT_PUBLIC_API_BASE || (origin ? `${origin}/api` : "http://backend:8000/api");
 			const id = nextIdRef.current;
 			if (id == null) {
 				setFinished(true);
 				return;
 			}
-			const url = type === "news" ? `${apiBase}/news/${id}/next/` : `${apiBase}/columns/${id}/next/`;
+			const url = `/api/next/${type}/${id}`;
 			const res = await fetch(url, { cache: "no-store" });
 			const data = await res.json();
 			if (!data || !data.next) {
