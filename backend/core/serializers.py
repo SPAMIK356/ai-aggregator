@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AuthorColumn, NewsItem, SitePage, Hashtag
+from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink
 
 
 class HashtagSerializer(serializers.ModelSerializer):
@@ -111,4 +111,19 @@ class SitePageSerializer(serializers.ModelSerializer):
 		model = SitePage
 		fields = ["slug", "title", "body", "updated_at"]
 
+
+class SocialLinkSerializer(serializers.ModelSerializer):
+	icon_url = serializers.SerializerMethodField()
+
+	class Meta:
+		model = SocialLink
+		fields = ["id", "name", "url", "icon_url", "order", "updated_at"]
+
+	def get_icon_url(self, obj: SocialLink) -> str:
+		if getattr(obj, "icon", None):
+			try:
+				return obj.icon.url
+			except Exception:
+				return ""
+		return ""
 

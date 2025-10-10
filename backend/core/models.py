@@ -149,6 +149,20 @@ class WebsiteSource(TimeStampedModel):
 
 
 
+class SocialLink(TimeStampedModel):
+	name = models.CharField(max_length=128)
+	url = models.URLField()
+	icon = models.ImageField(upload_to="social/", null=True, blank=True)
+	is_active = models.BooleanField(default=True)
+	order = models.PositiveIntegerField(default=0)
+
+	class Meta:
+		ordering = ("order", "id")
+
+	def __str__(self) -> str:
+		return self.name
+
+
 class KeywordFilter(TimeStampedModel):
 	"""Global list of phrases to skip before rewriting/posting.
 

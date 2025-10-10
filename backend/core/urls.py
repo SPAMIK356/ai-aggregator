@@ -12,6 +12,9 @@ from .views import (
 	SimilarPostsView,
 	HashtagListView,
 	ThemeListView,
+	SocialLinkListView,
+	NextNewsItemView,
+	NextAuthorColumnView,
 )
 
 
@@ -24,6 +27,9 @@ urlpatterns = [
     path("columns/create/", AuthorColumnCreateView.as_view(), name="column-create"),
 	path("posts/", UnifiedPostListView.as_view(), name="post-list"),
 	path("posts/similar/", SimilarPostsView.as_view(), name="post-similar"),
+	path("social-links/", SocialLinkListView.as_view(), name="social-link-list"),
+	path("news/<int:pk>/next/", NextNewsItemView.as_view(), name="news-next"),
+	path("columns/<int:pk>/next/", NextAuthorColumnView.as_view(), name="column-next"),
 	path("hashtags/", HashtagListView.as_view(), name="hashtag-list"),
 	path("meta/themes/", ThemeListView.as_view(), name="theme-list"),
 	# Site pages by slug (footer/about/contact/privacy/terms)

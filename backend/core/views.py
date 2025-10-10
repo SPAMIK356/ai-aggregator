@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.db import transaction
 import random
 
-from .models import AuthorColumn, NewsItem, SitePage, Hashtag
+from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink
 from django.db.models import Q
 from .serializers import (
 	AuthorColumnDetailSerializer,
@@ -12,6 +12,7 @@ from .serializers import (
 	NewsItemSerializer,
 	SitePageSerializer,
 	HashtagSerializer,
+	SocialLinkSerializer,
 )
 
 
@@ -300,5 +301,45 @@ class SitePageDetailView(generics.RetrieveAPIView):
 	lookup_field = "slug"
 	queryset = SitePage.objects.all()
 	serializer_class = SitePageSerializer
+
+
+class SocialLinkListView(generics.ListAPIView):
+	queryset = SocialLink.objects.filter(is_active=True).order_by("order", "id")
+	serializer_class = SocialLinkSerializer
+
+
+class NextNewsItemView(generics.GenericAPIView):
+	def get(self, request, *args, **kwargs):
+		current_id = int(kwargs.get("pk"))
+		current = NewsItem.objects.filter(pk=current_id).first()
+		if not current:
+			return Response({"next": None})
+		qs = NewsItem.objects.order_by("-published_at", "-id")
+		# find items strictly older than current by ordering
+		next_obj = qs.filter(
+			models.Q(published_at__lt=current.published_at) |
+			(models.Q(published_at=current.published_at) & models.Q(id__lt=current.id))
+		).first()
+		if not next_obj:
+			return Response({"next": None})
+		ser = NewsItemDetailSerializer(next_obj, context={"request": request})
+		return Response({"next": ser.data})
+
+
+class NextAuthorColumnView(generics.GenericAPIView):
+	def get(self, request, *args, **kwargs):
+		current_id = int(kwargs.get("pk"))
+		current = AuthorColumn.objects.filter(pk=current_id).first()
+		if not current:
+			return Response({"next": None})
+		qs = AuthorColumn.objects.order_by("-published_at", "-id")
+		next_obj = qs.filter(
+			models.Q(published_at__lt=current.published_at) |
+			(models.Q(published_at=current.published_at) & models.Q(id__lt=current.id))
+		).first()
+		if not next_obj:
+			return Response({"next": None})
+		ser = AuthorColumnDetailSerializer(next_obj, context={"request": request})
+		return Response({"next": ser.data})
 
 

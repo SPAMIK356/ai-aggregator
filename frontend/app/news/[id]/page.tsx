@@ -1,4 +1,6 @@
 import SmartThumb from "../../../components/SmartThumb";
+import SocialLinks from "../../../components/SocialLinks";
+import PostInfiniteReader from "../../../components/PostInfiniteReader";
 interface NewsDetail {
   id: number;
   title: string;
@@ -33,6 +35,7 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
       {(data.hashtags && data.hashtags.length > 0) && (
         <p className="meta" style={{ marginTop: 12 }}>{data.hashtags.map(h => <span key={h.slug} style={{ marginRight: 8 }}>#{h.name}</span>)}</p>
       )}
+      <SocialLinks />
       <hr style={{ margin: '24px 0', borderColor: 'var(--border)' }} />
       <h3 style={{ marginBottom: 12 }}>Похожие материалы</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -43,6 +46,7 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
           </a>
         ))}
       </div>
+      <PostInfiniteReader type="news" currentId={parseInt(params.id, 10)} />
     </article>
   );
 }

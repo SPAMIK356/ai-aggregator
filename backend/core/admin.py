@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink
 
 
 @admin.register(NewsSource)
@@ -117,4 +117,12 @@ class HashtagAdmin(admin.ModelAdmin):
 class SitePageAdmin(admin.ModelAdmin):
 	list_display = ("slug", "title", "updated_at")
 	search_fields = ("slug", "title")
+	readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(SocialLink)
+class SocialLinkAdmin(admin.ModelAdmin):
+	list_display = ("name", "url", "is_active", "order", "updated_at")
+	list_filter = ("is_active",)
+	search_fields = ("name", "url")
 	readonly_fields = ("created_at", "updated_at")
