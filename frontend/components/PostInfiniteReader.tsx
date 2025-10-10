@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import SmartThumb from "./SmartThumb";
 
 type PostType = "news" | "columns";
 
@@ -60,9 +61,9 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 					<div className="meta" style={{ marginBottom: 16 }}>
 						{type === "news" ? it.source_name : it.author_name} · {new Date(it.published_at).toLocaleString('ru-RU')}
 					</div>
-					{(it.resolved_image || it.image_url) && (
-						<p><img src={it.resolved_image || it.image_url} alt="" className="thumb" /></p>
-					)}
+				{(it.resolved_image || it.image_url) && (
+					<p><SmartThumb src={it.resolved_image || it.image_url} /></p>
+				)}
 					<div dangerouslySetInnerHTML={{ __html: type === "news" ? (it.description || "") : (it.content_body || "") }} />
 					{/* Social links */}
 					{(it._social && it._social.length > 0) && (
