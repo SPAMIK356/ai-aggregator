@@ -290,11 +290,6 @@ class ThemeListView(generics.GenericAPIView):
 			{"key": NewsItem.Theme.AI, "label": "AI"},
 			{"key": NewsItem.Theme.CRYPTO, "label": "CRYPTO"},
 		]})
-		if image_file:
-			obj.image_file = image_file
-			obj.save(update_fields=["image_file", "updated_at"])
-		ser = self.get_serializer(obj, context={"request": request})
-		return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
 class SitePageDetailView(generics.RetrieveAPIView):

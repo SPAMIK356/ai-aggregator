@@ -192,15 +192,15 @@ def run_parser() -> dict:
 					if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
 						skipped += 1
 						continue
-                    # Pick theme from source.default_theme (fallback to AI)
-                    theme_val = source.default_theme or NewsItem.Theme.AI
-                    NewsItem.objects.create(
+					# Pick theme from source.default_theme (fallback to AI)
+					theme_val = source.default_theme or NewsItem.Theme.AI
+					NewsItem.objects.create(
 						title=title or link,
 						original_url=link,
 						description=description[:2000],
 						published_at=published_at,
-                        source_name=source.title or source.url,
-                        theme=theme_val,
+						source_name=source.title or source.url,
+						theme=theme_val,
 					)
 					created += 1
 			except IntegrityError:
@@ -314,10 +314,10 @@ def fetch_telegram_channels() -> dict:
 									logger.info("TG keyword skip url=%s", url)
 									skipped += 1
 									continue
-							try:
-                        rew = rewrite_article(orig_title, orig_body)
-							except Exception:
-								rew = None
+					try:
+						rew = rewrite_article(orig_title, orig_body)
+					except Exception:
+						rew = None
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
 							# Skip too-short per config (check rewritten/body)
@@ -361,36 +361,36 @@ def fetch_telegram_channels() -> dict:
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.info("TG image fallback to permalink url=%s", img_url)
 						except Exception:
-							# If anything fails, fall back to t.me permalink
+					# If anything fails, fall back to t.me permalink
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							logger.exception("TG image download failed; using permalink url=%s", img_url)
-                        # Determine theme: use AI output if present else channel default else AI
-                        theme_val = None
-                        try:
-                            t = (rew or {}).get("theme") if isinstance(rew, dict) else None
-                            if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
-                                theme_val = t.strip().upper()
-                        except Exception:
-                            theme_val = None
-                        n = NewsItem.objects.create(
+					# Determine theme: use AI output if present else channel default else AI
+					theme_val = None
+					try:
+						t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+						if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+							theme_val = t.strip().upper()
+					except Exception:
+						theme_val = None
+					n = NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
 							description=(rew.get("content") or orig_body)[:10000],
 							image_url=img_url,
 							published_at=published_at,
-                            source_name=ch.title or ch.username,
-                            theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
+						source_name=ch.title or ch.username,
+						theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
 						)
-                        # Attach hashtags if provided and valid
-                        try:
-                            tags = rew.get("hashtags") if isinstance(rew, dict) else None
-                            if isinstance(tags, list) and tags:
-                                slugs = [str(s).strip().lower() for s in tags if s]
-                                objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
-                                if objs:
-                                    n.hashtags.add(*objs)
-                        except Exception:
-                            logger.exception("Attach hashtags failed (TG)")
+					# Attach hashtags if provided and valid
+					try:
+						tags = rew.get("hashtags") if isinstance(rew, dict) else None
+						if isinstance(tags, list) and tags:
+							slugs = [str(s).strip().lower() for s in tags if s]
+							objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+							if objs:
+								n.hashtags.add(*objs)
+					except Exception:
+						logger.exception("Attach hashtags failed (TG)")
 						logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
 						created += 1
 					except IntegrityError:
@@ -513,33 +513,33 @@ def fetch_websites() -> dict:
 											img = f"{media_url}{rel.as_posix()}"
 								except Exception:
 									logger.exception("WEB image download failed")
-                        # Determine theme: use AI output if present else website default else AI
-                        theme_val = None
-                        try:
-                            t = (rew or {}).get("theme") if isinstance(rew, dict) else None
-                            if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
-                                theme_val = t.strip().upper()
-                        except Exception:
-                            theme_val = None
-                        n = NewsItem.objects.create(
+							# Determine theme: use AI output if present else website default else AI
+							theme_val = None
+							try:
+								t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+								if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+									theme_val = t.strip().upper()
+							except Exception:
+								theme_val = None
+							n = NewsItem.objects.create(
 							title=(rew.get("title") or title or link)[:500],
 							original_url=link,
 							description=(rew.get("content") or desc or "")[:10000],
 							image_url=img,
 							published_at=timezone.now(),
-                            source_name=ws.name,
-                            theme=(theme_val or ws.default_theme or NewsItem.Theme.AI),
+							source_name=ws.name,
+							theme=(theme_val or ws.default_theme or NewsItem.Theme.AI),
 						)
-                        # Attach hashtags if provided and valid
-                        try:
-                            tags = rew.get("hashtags") if isinstance(rew, dict) else None
-                            if isinstance(tags, list) and tags:
-                                slugs = [str(s).strip().lower() for s in tags if s]
-                                objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
-                                if objs:
-                                    n.hashtags.add(*objs)
-                        except Exception:
-                            logger.exception("Attach hashtags failed (WEB)")
+						# Attach hashtags if provided and valid
+						try:
+							tags = rew.get("hashtags") if isinstance(rew, dict) else None
+							if isinstance(tags, list) and tags:
+								slugs = [str(s).strip().lower() for s in tags if s]
+								objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+								if objs:
+									n.hashtags.add(*objs)
+						except Exception:
+							logger.exception("Attach hashtags failed (WEB)")
 						created += 1
 				except IntegrityError:
 					skipped += 1
