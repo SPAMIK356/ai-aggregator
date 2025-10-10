@@ -3,6 +3,19 @@ from rest_framework import serializers
 from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink
 
 
+def _abs_url(request, url: str) -> str:
+	if not url:
+		return ""
+	if url.startswith("http://") or url.startswith("https://"):
+		return url
+	try:
+		if request is not None:
+			return request.build_absolute_uri(url)
+	except Exception:
+		pass
+	return url
+
+
 class HashtagSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Hashtag
@@ -29,10 +42,11 @@ class NewsItemSerializer(serializers.ModelSerializer):
 		]
 
 	def get_resolved_image(self, obj: NewsItem) -> str:
+		request = self.context.get("request") if hasattr(self, "context") else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return url
-		return obj.image_url or ""
+			return _abs_url(request, url)
+		return _abs_url(request, obj.image_url or "")
 
 	def get_hashtags(self, obj: NewsItem):
 		items = getattr(obj, "hashtags", None).all() if hasattr(obj, "hashtags") else []
@@ -59,10 +73,11 @@ class NewsItemDetailSerializer(serializers.ModelSerializer):
 		]
 
 	def get_resolved_image(self, obj: NewsItem) -> str:
+		request = self.context.get("request") if hasattr(self, "context") else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return url
-		return obj.image_url or ""
+			return _abs_url(request, url)
+		return _abs_url(request, obj.image_url or "")
 
 	def get_hashtags(self, obj: NewsItem):
 		items = getattr(obj, "hashtags", None).all() if hasattr(obj, "hashtags") else []
@@ -77,10 +92,11 @@ class AuthorColumnListSerializer(serializers.ModelSerializer):
 		fields = ["id", "title", "author_name", "published_at", "image_url", "resolved_image", "theme", "hashtags"]
 
 	def get_resolved_image(self, obj: AuthorColumn) -> str:
+		request = self.context.get("request") if hasattr(self, "context") else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return url
-		return obj.image_url or ""
+			return _abs_url(request, url)
+		return _abs_url(request, obj.image_url or "")
 
 	def get_hashtags(self, obj: AuthorColumn):
 		items = getattr(obj, "hashtags", None).all() if hasattr(obj, "hashtags") else []
@@ -96,10 +112,11 @@ class AuthorColumnDetailSerializer(serializers.ModelSerializer):
 		fields = ["id", "title", "author_name", "published_at", "content_body", "image_url", "resolved_image", "theme", "hashtags"]
 
 	def get_resolved_image(self, obj: AuthorColumn) -> str:
+		request = self.context.get("request") if hasattr(self, "context") else None
 		if getattr(obj, "image_file", None):
 			url = obj.image_file.url if hasattr(obj.image_file, 'url') else ""
-			return url
-		return obj.image_url or ""
+			return _abs_url(request, url)
+		return _abs_url(request, obj.image_url or "")
 
 	def get_hashtags(self, obj: AuthorColumn):
 		items = getattr(obj, "hashtags", None).all() if hasattr(obj, "hashtags") else []
@@ -120,9 +137,10 @@ class SocialLinkSerializer(serializers.ModelSerializer):
 		fields = ["id", "name", "url", "icon_url", "order", "updated_at"]
 
 	def get_icon_url(self, obj: SocialLink) -> str:
+		request = self.context.get("request") if hasattr(self, "context") else None
 		if getattr(obj, "icon", None):
 			try:
-				return obj.icon.url
+				return _abs_url(request, obj.icon.url)
 			except Exception:
 				return ""
 		return ""
