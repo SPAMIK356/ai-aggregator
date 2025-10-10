@@ -28,7 +28,8 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 		if (loading || finished) return;
 		setLoading(true);
 		try {
-			const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://backend:8000/api";
+			const origin = typeof window !== 'undefined' ? window.location.origin : '';
+			const apiBase = process.env.NEXT_PUBLIC_API_BASE || (origin ? `${origin}/api` : "http://backend:8000/api");
 			const id = nextIdRef.current;
 			if (id == null) {
 				setFinished(true);

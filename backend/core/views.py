@@ -317,8 +317,8 @@ class NextNewsItemView(generics.GenericAPIView):
 		qs = NewsItem.objects.order_by("-published_at", "-id")
 		# find items strictly older than current by ordering
 		next_obj = qs.filter(
-			models.Q(published_at__lt=current.published_at) |
-			(models.Q(published_at=current.published_at) & models.Q(id__lt=current.id))
+			Q(published_at__lt=current.published_at) |
+			(Q(published_at=current.published_at) & Q(id__lt=current.id))
 		).first()
 		if not next_obj:
 			return Response({"next": None})
@@ -334,8 +334,8 @@ class NextAuthorColumnView(generics.GenericAPIView):
 			return Response({"next": None})
 		qs = AuthorColumn.objects.order_by("-published_at", "-id")
 		next_obj = qs.filter(
-			models.Q(published_at__lt=current.published_at) |
-			(models.Q(published_at=current.published_at) & models.Q(id__lt=current.id))
+			Q(published_at__lt=current.published_at) |
+			(Q(published_at=current.published_at) & Q(id__lt=current.id))
 		).first()
 		if not next_obj:
 			return Response({"next": None})

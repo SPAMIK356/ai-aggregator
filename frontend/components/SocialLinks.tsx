@@ -7,7 +7,8 @@ type LinkItem = { id: number; name: string; url: string; icon_url?: string };
 export default function SocialLinks() {
 	const [items, setItems] = useState<LinkItem[]>([]);
 	useEffect(() => {
-		const api = process.env.NEXT_PUBLIC_API_BASE || "http://backend:8000/api";
+		const origin = typeof window !== 'undefined' ? window.location.origin : '';
+		const api = process.env.NEXT_PUBLIC_API_BASE || (origin ? `${origin}/api` : "http://backend:8000/api");
 		fetch(`${api}/social-links/`, { cache: "no-store" })
 			.then(r => r.json())
 			.then(d => setItems(d.results || []))
