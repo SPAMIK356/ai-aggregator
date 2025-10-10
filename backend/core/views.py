@@ -320,6 +320,9 @@ class NextNewsItemView(generics.GenericAPIView):
 			Q(published_at__lt=current.published_at) |
 			(Q(published_at=current.published_at) & Q(id__lt=current.id))
 		).first()
+		# Fallback by numeric id if timestamps are identical across all
+		if not next_obj:
+			next_obj = NewsItem.objects.filter(id__lt=current.id).order_by("-id").first()
 		if not next_obj:
 			return Response({"next": None})
 		ser = NewsItemDetailSerializer(next_obj, context={"request": request})
@@ -337,6 +340,8 @@ class NextAuthorColumnView(generics.GenericAPIView):
 			Q(published_at__lt=current.published_at) |
 			(Q(published_at=current.published_at) & Q(id__lt=current.id))
 		).first()
+		if not next_obj:
+			next_obj = AuthorColumn.objects.filter(id__lt=current.id).order_by("-id").first()
 		if not next_obj:
 			return Response({"next": None})
 		ser = AuthorColumnDetailSerializer(next_obj, context={"request": request})
