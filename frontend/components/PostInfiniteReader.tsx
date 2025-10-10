@@ -33,7 +33,7 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 				setFinished(true);
 				return;
 			}
-			const url = `/api/next/${type}/${id}`;
+			const url = type === "news" ? `/api/news/${id}/next/` : `/api/columns/${id}/next/`;
 			const res = await fetch(url, { cache: "no-store" });
 			const data = await res.json();
 			if (!data || !data.next) {
