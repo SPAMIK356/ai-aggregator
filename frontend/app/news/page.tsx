@@ -37,7 +37,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
         <a href={`/news?theme=AI`} className="pill">ИИ</a>
         <a href={`/news?theme=CRYPTO`} className="pill">Крипта</a>
       </div>
-      <p className="meta" style={{ marginTop: 8, maxWidth: 900 }}>{desc}</p>
+      <p style={{ marginTop: 12, maxWidth: 900 }}>{desc}</p>
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((n: any) => (
           <a key={n.id} href={`/news/${n.id}`} className="card">
