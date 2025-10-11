@@ -80,7 +80,8 @@ a:hover { color: var(--accent); }
 .section-title { margin: 8px 0 12px; font-size: 22px; color: #fff; }
 
 .cards { display: grid; grid-template-columns: 1fr; gap: 12px; }
-@media (min-width: 920px) { .cards { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 768px) { .cards { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1280px) { .cards { grid-template-columns: 1fr 1fr 1fr; } }
 
 .card {
 	display: block;

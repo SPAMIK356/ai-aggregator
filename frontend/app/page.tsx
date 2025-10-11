@@ -70,7 +70,7 @@ export default async function HomePage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         <section>
           <h2 className="section-title">Новости будущего</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="cards">
             {newsData.results.map((n: any) => (
               <a key={n.id} href={`/news/${n.id}`} className="card">
                 {(n.resolved_image || n.image_url) && (
@@ -95,7 +95,7 @@ export default async function HomePage() {
 
         <section>
           <h2 className="section-title">Блоги от инсайдеров</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="cards">
             {columnsData.results.map((c: any) => (
               <a key={c.id} href={`/columns/${c.id}`} className="card">
                 {(c.resolved_image || c.image_url) && (
