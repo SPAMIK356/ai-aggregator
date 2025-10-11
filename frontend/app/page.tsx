@@ -67,13 +67,12 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div className="home-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
-        <style>{`@media (min-width: 960px){ .home-two-col { display:grid; grid-template-columns: 1fr 1fr; gap:24px; }}`}</style>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         <section>
           <h2 className="section-title">Новости будущего</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, justifyItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {newsData.results.map((n: any) => (
-              <a key={n.id} href={`/news/${n.id}`} className="card" style={{ width: '100%', maxWidth: 460 }}>
+              <a key={n.id} href={`/news/${n.id}`} className="card">
                 {(n.resolved_image || n.image_url) && (
                   <div style={{ marginBottom: 8 }}>
                     <img src={n.resolved_image || n.image_url} alt="" className="thumb" />
@@ -96,9 +95,9 @@ export default async function HomePage() {
 
         <section>
           <h2 className="section-title">Блоги от инсайдеров</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, justifyItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {columnsData.results.map((c: any) => (
-              <a key={c.id} href={`/columns/${c.id}`} className="card" style={{ width: '100%', maxWidth: 460 }}>
+              <a key={c.id} href={`/columns/${c.id}`} className="card">
                 {(c.resolved_image || c.image_url) && (
                   <div style={{ marginBottom: 8 }}>
                     <img src={c.resolved_image || c.image_url} alt="" className="thumb" />
