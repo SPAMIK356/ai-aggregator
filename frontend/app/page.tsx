@@ -67,9 +67,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
+      <div className="home-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
         <style>{`@media (min-width: 960px){ .home-two-col { display:grid; grid-template-columns: 1fr 1fr; gap:24px; }}`}</style>
-        <section className="home-two-col">
+        <section>
           <h2 className="section-title">Новости будущего</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, justifyItems: 'center' }}>
             {newsData.results.map((n: any) => (
