@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink, AdBanner
 
 
 @admin.register(NewsSource)
@@ -126,3 +126,12 @@ class SocialLinkAdmin(admin.ModelAdmin):
 	list_filter = ("is_active",)
 	search_fields = ("name", "url")
 	readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(AdBanner)
+class AdBannerAdmin(admin.ModelAdmin):
+	list_display = ("name", "is_active", "weight", "updated_at")
+	list_filter = ("is_active",)
+	readonly_fields = ("created_at", "updated_at")
+	search_fields = ("name", "url")
+	fields = ("name", "url", "image", "is_active", "weight", "created_at", "updated_at")

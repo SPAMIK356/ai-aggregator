@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink
+from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink, AdBanner
 
 
 class HashtagSerializer(serializers.ModelSerializer):
@@ -126,4 +126,18 @@ class SocialLinkSerializer(serializers.ModelSerializer):
 			except Exception:
 				return ""
 		return ""
+
+
+class AdBannerSerializer(serializers.ModelSerializer):
+	image_url = serializers.SerializerMethodField()
+
+	class Meta:
+		model = AdBanner
+		fields = ["id", "name", "url", "image_url", "weight", "updated_at"]
+
+	def get_image_url(self, obj: AdBanner) -> str:
+		try:
+			return obj.image.url
+		except Exception:
+			return ""
 

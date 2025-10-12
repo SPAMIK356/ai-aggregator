@@ -31,15 +31,16 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
 
   return (
     <div>
-      <h1 className="section-title">Новости</h1>
+      <h1 className="section-title">News</h1>
       <div className="meta" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <a href={`/news`} className="pill">Все</a>
-        <a href={`/news?theme=AI`} className="pill">ИИ</a>
-        <a href={`/news?theme=CRYPTO`} className="pill">Крипта</a>
+        <a href={`/news`} className="pill">All</a>
+        <a href={`/news?theme=AI`} className="pill">AI</a>
+        <a href={`/news?theme=CRYPTO`} className="pill">Crypto</a>
       </div>
-      <p style={{ marginTop: 12, maxWidth: 900 }}>{desc}</p>
+      <p className="section-desc">{desc}</p>
       <div className="cards" style={{ marginTop: 12 }}>
-        {data.results.map((n: any) => (
+        {data.results.map((n: any, idx: number) => (
+          <>
           <a key={n.id} href={`/news/${n.id}`} className="card">
             {(n.resolved_image || n.image_url) && (
               <div style={{ marginBottom: 8 }}>
@@ -57,6 +58,8 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
               </p>
             )}
           </a>
+          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><div className="ad-wrap" style={{ width: '100%' }}><img src="/api/ads-placeholder" alt="" /></div></div> : null}
+          </>
         ))}
       </div>
 

@@ -4,7 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 import random
 
-from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink
+from .models import AuthorColumn, NewsItem, SitePage, Hashtag, SocialLink, AdBanner
 from django.db.models import Q
 from .serializers import (
 	AuthorColumnDetailSerializer,
@@ -14,6 +14,7 @@ from .serializers import (
 	SitePageSerializer,
 	HashtagSerializer,
 	SocialLinkSerializer,
+    AdBannerSerializer,
 )
 
 
@@ -302,6 +303,11 @@ class SitePageDetailView(generics.RetrieveAPIView):
 class SocialLinkListView(generics.ListAPIView):
 	queryset = SocialLink.objects.filter(is_active=True).order_by("order", "id")
 	serializer_class = SocialLinkSerializer
+
+class AdBannerListView(generics.ListAPIView):
+	queryset = AdBanner.objects.filter(is_active=True)
+	serializer_class = AdBannerSerializer
+
 
 
 class NextNewsItemView(generics.GenericAPIView):

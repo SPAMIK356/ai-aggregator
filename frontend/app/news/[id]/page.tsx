@@ -1,5 +1,6 @@
 import SmartThumb from "../../../components/SmartThumb";
 import SocialLinks from "../../../components/SocialLinks";
+import AdBanner from "../../../components/AdBanner";
 import PostInfiniteReader from "../../../components/PostInfiniteReader";
 interface NewsDetail {
   id: number;
@@ -36,8 +37,9 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
         <p className="meta" style={{ marginTop: 12 }}>{data.hashtags.map(h => <span key={h.slug} style={{ marginRight: 8 }}>#{h.name}</span>)}</p>
       )}
       <SocialLinks />
+      <AdBanner />
       <hr style={{ margin: '24px 0', borderColor: 'var(--border)' }} />
-      <h3 style={{ marginBottom: 12 }}>Похожие материалы</h3>
+      <h3 style={{ marginBottom: 12 }}>Related posts</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {similar.results.map(item => (
           <a key={item.id} href={`/news/${item.id}`} className="card">

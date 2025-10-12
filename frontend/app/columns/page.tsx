@@ -15,9 +15,10 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
 
   return (
     <div>
-      <h1 className="section-title">Авторские колонки</h1>
+      <h1 className="section-title">Insider Blogs</h1>
       <div className="cards" style={{ marginTop: 12 }}>
-        {data.results.map((c: any) => (
+        {data.results.map((c: any, idx: number) => (
+          <>
           <a key={c.id} href={`/columns/${c.id}`} className="card">
             {(c.resolved_image || c.image_url) && (
               <div style={{ marginBottom: 8 }}>
@@ -35,12 +36,14 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
               </p>
             )}
           </a>
+          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><div className="ad-wrap" style={{ width: '100%' }}><img src="/api/ads-placeholder" alt="" /></div></div> : null}
+          </>
         ))}
       </div>
 
       <div className="pagination">
-        {page > 1 && <a className="pill" href={`?page=${page - 1}`}>&larr; Назад</a>}
-        {data.next && <a className="pill" href={`?page=${page + 1}`}>Далее &rarr;</a>}
+        {page > 1 && <a className="pill" href={`?page=${page - 1}`}>&larr; Prev</a>}
+        {data.next && <a className="pill" href={`?page=${page + 1}`}>Next &rarr;</a>}
       </div>
     </div>
   );

@@ -113,6 +113,9 @@ a:hover { color: var(--accent); }
 .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
 .snippet { color: #d1d5db; margin-top: 8px; line-height: 1.45; }
 
+/* Shared section description */
+.section-desc { color: #dbe0e8; margin: 12px 0; line-height: 1.55; }
+
 .pagination { display: flex; gap: 12px; margin-top: 16px; }
 .pill { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
@@ -187,6 +190,20 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 	margin: 14px 0 22px;
 	background: linear-gradient(180deg, #0a0a12, #0a0a11);
 }
+
+/* Crypto widget */
+.crypto-widget { display: none; gap: 10px; align-items: center; }
+@media (min-width: 1024px) { .crypto-widget { display: inline-flex; } }
+.crypto-chip { display: grid; grid-template-columns: auto; justify-items: start; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); }
+.crypto-symbol { font-weight: 700; }
+.crypto-price { color: #e8ebf0; }
+.crypto-change { font-size: 12px; }
+.crypto-change.up { color: #00d38f; }
+.crypto-change.down { color: #ff6b6b; }
+
+/* Ad banner wrap (twice wider than post image wrap) */
+.ad-wrap { width: 136%; margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
+.ad-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
 .ticker::after {
 	content: "";
 	position: absolute; inset: 0;

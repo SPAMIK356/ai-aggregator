@@ -15,6 +15,7 @@ from .views import (
 	SocialLinkListView,
 	NextNewsItemView,
 	NextAuthorColumnView,
+    AdBannerListView,
 )
 
 
@@ -28,6 +29,7 @@ urlpatterns = [
 	path("posts/", UnifiedPostListView.as_view(), name="post-list"),
 	path("posts/similar/", SimilarPostsView.as_view(), name="post-similar"),
 	path("social-links/", SocialLinkListView.as_view(), name="social-link-list"),
+    path("ads/", AdBannerListView.as_view(), name="ad-list"),
 	path("news/<int:pk>/next/", NextNewsItemView.as_view(), name="news-next"),
 	path("columns/<int:pk>/next/", NextAuthorColumnView.as_view(), name="column-next"),
 	path("hashtags/", HashtagListView.as_view(), name="hashtag-list"),

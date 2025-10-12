@@ -163,6 +163,20 @@ class SocialLink(TimeStampedModel):
 		return self.name
 
 
+class AdBanner(TimeStampedModel):
+	name = models.CharField(max_length=255)
+	url = models.URLField()
+	image = models.ImageField(upload_to="ads/")
+	is_active = models.BooleanField(default=True)
+	weight = models.PositiveIntegerField(default=1)
+
+	class Meta:
+		ordering = ("-updated_at", "id")
+
+	def __str__(self) -> str:
+		return self.name
+
+
 class KeywordFilter(TimeStampedModel):
 	"""Global list of phrases to skip before rewriting/posting.
 
