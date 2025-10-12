@@ -56,6 +56,7 @@ services:
       dockerfile: frontend/Dockerfile
     environment:
       NEXT_PUBLIC_API_BASE: http://backend:8000/api
+      COINGECKO_PRO_API_KEY: ${COINGECKO_PRO_API_KEY:-}
     depends_on:
       - backend
     ports:
