@@ -31,13 +31,15 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
 
   return (
     <div>
-      <h1 className="section-title">News</h1>
+      <section className="hero">
+        <h1>News</h1>
+        <p>{desc}</p>
+      </section>
       <div className="meta" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <a href={`/news`} className="pill">All</a>
         <a href={`/news?theme=AI`} className="pill">AI</a>
         <a href={`/news?theme=CRYPTO`} className="pill">Crypto</a>
       </div>
-      <p className="section-desc">{desc}</p>
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((n: any, idx: number) => (
           <>
@@ -64,8 +66,8 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
       </div>
 
       <div className="pagination">
-        {page > 1 && <a className="pill" href={`?page=${page - 1}${themeParam ? `&theme=${theme}` : ''}`}>&larr; Назад</a>}
-        {data.next && <a className="pill" href={`?page=${page + 1}${themeParam ? `&theme=${theme}` : ''}`}>Далее &rarr;</a>}
+        {page > 1 && <a className="pill" href={`?page=${page - 1}${themeParam ? `&theme=${theme}` : ''}`}>&larr; Prev</a>}
+        {data.next && <a className="pill" href={`?page=${page + 1}${themeParam ? `&theme=${theme}` : ''}`}>Next &rarr;</a>}
       </div>
     </div>
   );
