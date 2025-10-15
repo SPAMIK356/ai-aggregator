@@ -8,6 +8,8 @@ function stripHtml(input: string): string {
   return (input || "").replace(/<[^>]+>/g, "");
 }
 
+import AdBanner from "../../components/AdBanner";
+
 export default async function ColumnsListPage({ searchParams }: { searchParams: { page?: string } }) {
   const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
   const page = Number(searchParams?.page || 1);
@@ -36,7 +38,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
               </p>
             )}
           </a>
-          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><div className="ad-wrap feed"><img src="/api/ads-placeholder" alt="" /></div></div> : null}
+          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><AdBanner variant="feed" /></div> : null}
           </>
         ))}
       </div>
