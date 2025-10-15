@@ -36,7 +36,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
               </p>
             )}
           </a>
-          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><div className="ad-wrap" style={{ width: '100%' }}><img src="/api/ads-placeholder" alt="" /></div></div> : null}
+          {(idx > 0 && idx % 6 === 0) ? <div key={`ad-${idx}`} className="card" style={{ padding: 0 }}><div className="ad-wrap feed"><img src="/api/ads-placeholder" alt="" /></div></div> : null}
           </>
         ))}
       </div>
