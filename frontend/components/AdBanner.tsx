@@ -8,6 +8,7 @@ type Banner = { id: number; name: string; url: string; image_url: string; weight
 
 export default async function AdBanner({ variant }: { variant?: 'post' | 'feed' }) {
   const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
+  const backendOrigin = api.replace(/\/?api\/?$/, '');
   const data = await fetchJson<{ results: Banner[] }>(`${api}/ads/`);
   const items = data.results?.filter(b => b.image_url && b.url) || [];
   if (!items.length) return null;
@@ -20,10 +21,16 @@ export default async function AdBanner({ variant }: { variant?: 'post' | 'feed' 
     if (r <= 0) { pick = b; break; }
   }
   const cls = variant === 'feed' ? 'ad-wrap feed' : 'ad-wrap';
+  const absoluteImageUrl = (() => {
+    const img = pick.image_url || '';
+    if (/^https?:\/\//i.test(img)) return img;
+    return `${backendOrigin}${img.startsWith('/') ? img : `/${img}`}`;
+  })();
+  const proxiedSrc = `/fe-media?u=${encodeURIComponent(absoluteImageUrl)}`;
   return (
     <div className={cls}>
       <a href={pick.url} target="_blank" rel="noopener noreferrer" title={pick.name}>
-        <img src={pick.image_url} alt={pick.name} />
+        <img src={proxiedSrc} alt={pick.name} />
       </a>
     </div>
   );
