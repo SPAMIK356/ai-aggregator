@@ -26,7 +26,7 @@ export default async function AdBanner({ variant }: { variant?: 'post' | 'feed' 
     if (/^https?:\/\//i.test(img)) return img;
     return `${backendOrigin}${img.startsWith('/') ? img : `/${img}`}`;
   })();
-  const proxiedSrc = `/fe-media?u=${encodeURIComponent(absoluteImageUrl)}`;
+  const proxiedSrc = `/api/fe-media?u=${encodeURIComponent(absoluteImageUrl)}`;
   return (
     <div className={cls}>
       <a href={pick.url} target="_blank" rel="noopener noreferrer" title={pick.name}>
