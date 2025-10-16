@@ -22,7 +22,9 @@ export default function PromoBanner({ src, alt, variant, url }: Props) {
       aria-label={alt}
       title={alt}
     >
-      <img src={src} alt={alt} />
+      <div className="promo-frame">
+        <img src={src} alt={alt} />
+      </div>
     </div>
   );
 }

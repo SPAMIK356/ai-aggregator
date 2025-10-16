@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import SmartThumb from "./SmartThumb";
+import AdBanner from "./AdBanner";
 
 type PostType = "news" | "columns";
 
@@ -65,6 +66,10 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 					<p><SmartThumb src={it.resolved_image || it.image_url} /></p>
 				)}
 					<div dangerouslySetInnerHTML={{ __html: type === "news" ? (it.description || "") : (it.content_body || "") }} />
+				{/* Promo banner after content */}
+				<div style={{ marginTop: 12 }}>
+					<AdBanner variant="post" />
+				</div>
 					{/* Social links */}
 					{(it._social && it._social.length > 0) && (
 						<div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
