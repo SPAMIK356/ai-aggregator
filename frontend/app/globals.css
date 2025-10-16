@@ -202,7 +202,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .crypto-change.down { color: #ff6b6b; }
 
 /* Ad banner wrap (twice wider than post image wrap) */
-.promo-wrap { width: 136%; margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
+.promo-wrap { width: calc(136% / 1.5); margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
 .promo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
 .promo-wrap.feed { width: 100%; }
 .promo-frame { width: 100%; aspect-ratio: 5 / 1; background: var(--bg-elev); }
