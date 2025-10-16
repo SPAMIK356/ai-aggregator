@@ -205,8 +205,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .promo-wrap { width: 136%; margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
 .promo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
 .promo-wrap.feed { width: 100%; }
-.promo-frame { width: 100%; aspect-ratio: 2 / 1; background: var(--bg-elev); }
-.promo-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.promo-frame { width: 100%; aspect-ratio: 5 / 1; background: var(--bg-elev); }
+.promo-frame img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 .ticker::after {
 	content: "";
 	position: absolute; inset: 0;
