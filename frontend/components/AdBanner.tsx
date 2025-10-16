@@ -20,20 +20,14 @@ export default async function AdBanner({ variant }: { variant?: 'post' | 'feed' 
     r -= Math.max(1, Number(b.weight || 1));
     if (r <= 0) { pick = b; break; }
   }
-  const cls = variant === 'feed' ? 'ad-wrap feed' : 'ad-wrap';
   const absoluteImageUrl = (() => {
     const img = pick.image_url || '';
     if (/^https?:\/\//i.test(img)) return img;
     return `${backendOrigin}${img.startsWith('/') ? img : `/${img}`}`;
   })();
   const proxiedSrc = `/api/fe-media?u=${encodeURIComponent(absoluteImageUrl)}`;
-  return (
-    <div className={cls}>
-      <a href={pick.url} target="_blank" rel="noopener noreferrer" title={pick.name}>
-        <img src={proxiedSrc} alt={pick.name} />
-      </a>
-    </div>
-  );
+  const PromoBanner = (await import('./PromoBanner')).default;
+  return <PromoBanner src={proxiedSrc} alt={pick.name} variant={variant} url={pick.url} />;
 }
 
 
