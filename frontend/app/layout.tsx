@@ -5,8 +5,6 @@ import newsIcon from '../icons/News_site.png';
 import authorsIcon from '../icons/Autors.png';
 import contactIcon from '../icons/Contact.png';
 import CryptoWidget from '../components/CryptoWidget';
-import dynamic from 'next/dynamic';
-const MobileNav = dynamic(() => import('../components/MobileNav'), { ssr: false });
 
 export const metadata = {
 	title: '2049.news',
@@ -18,10 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="ru">
 			<body>
                 <header className="site-header">
-					<div className="container">
+                    <div className="container">
                     <nav className="nav">
                         <a href="/" className="brand">2049.news</a>
-                        <div className="nav-desktop">
                         <a href="/news" className="nav-button" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <Image src={newsIcon} alt="News" width={18} height={18} />
                             Future News
@@ -41,13 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             Contacts
                             </a>
                     </div>
-                        </div>
-                        <div className="nav-mobile">
-                            <MobileNav />
-                        </div>
                     </nav>
-					</div>
-				</header>
+                    </div>
+                </header>
 				<main className="container">{children}</main>
 				<footer className="site-footer">
 					<div className="container">
