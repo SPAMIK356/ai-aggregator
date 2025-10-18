@@ -212,13 +212,20 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
 	html, body { background-attachment: scroll; }
-	.site-header { background: #0a0a12; backdrop-filter: none; }
-	.site-footer { background: #0a0a12; }
+	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
+	.site-footer { background: #0a0a12; width: 100%; }
 	.hero { padding: 14px; }
 	.hero h1 { font-size: 24px; }
 	.section-title { font-size: 20px; }
 	.snippet { font-size: 14px; }
 	.thumb { height: 160px; }
+}
+
+/* Ensure full-width solid header/footer on tablets as well */
+@media (max-width: 1024px) {
+	html, body { background-attachment: scroll; }
+	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
+	.site-footer { background: #0a0a12; width: 100%; }
 }
 .ticker::after {
 	content: "";
