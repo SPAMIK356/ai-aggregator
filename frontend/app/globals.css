@@ -212,8 +212,13 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
 	html, body { background-attachment: scroll; }
+	html, body { overflow-x: hidden; width: 100%; max-width: 100%; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
 	.site-footer { background: #0a0a12; width: 100%; }
+	/* Remove fixed noise overlay to avoid blending artifacts over header/footer */
+	body::before { display: none; }
+	/* Force full-bleed header/footer regardless of container width */
+	.site-header, .site-footer { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
 	.hero { padding: 14px; }
 	.hero h1 { font-size: 24px; }
 	.section-title { font-size: 20px; }
@@ -224,8 +229,10 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Ensure full-width solid header/footer on tablets as well */
 @media (max-width: 1024px) {
 	html, body { background-attachment: scroll; }
+	html, body { overflow-x: hidden; width: 100%; max-width: 100%; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
 	.site-footer { background: #0a0a12; width: 100%; }
+	.site-header, .site-footer { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
 }
 .ticker::after {
 	content: "";
