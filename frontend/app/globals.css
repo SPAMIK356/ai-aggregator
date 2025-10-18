@@ -127,7 +127,6 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 }
 
 .prose { color: #e8ebf0; line-height: 1.6; }
-.prose h1, .prose h2, .prose h3 { }
 .prose img { max-width: 100%; border-radius: 8px; }
 
 /* Better typography for blockquotes and code */
@@ -212,6 +211,9 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
+	html, body { background-attachment: scroll; }
+	.site-header { background: #0a0a12; backdrop-filter: none; }
+	.site-footer { background: #0a0a12; }
 	.hero { padding: 14px; }
 	.hero h1 { font-size: 24px; }
 	.section-title { font-size: 20px; }
