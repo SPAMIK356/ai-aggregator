@@ -26,10 +26,10 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
   const themeParam = theme === 'AI' || theme === 'CRYPTO' ? `&theme=${theme}` : '';
   const data = await fetchJson(`${api}/news/?page=${page}${themeParam}`);
   const desc = theme === 'AI'
-    ? 'Последние прорывы в ИИ: модели, инструменты и индустриальные кейсы. Следим за безопастностью, качеством и тем, как ИИ уже внедряется в продукты.'
+    ? 'The latest breakthroughs in AI: models, tools, and industry use cases. We track safety, quality, and how AI is already being integrated into products.'
     : theme === 'CRYPTO'
-    ? 'Главное из криптомира: рынки, протоколы, регуляции и инфраструктура. От фундаментальных апдейтов до практического использования.'
-    : 'Собираем ключевые новости о технологиях будущего: ИИ, крипторынок и прорывы, которые меняют мир. Коротко, по делу и без лишнего шума.';
+    ? 'Highlights from the crypto world: markets, protocols, regulations, and infrastructure. From fundamental updates to practical applications.'
+    : 'We gather key news about future technologies: AI, the crypto market, and breakthroughs that are changing the world. Concise, to the point, and without the extra noise.';
 
   return (
     <div>

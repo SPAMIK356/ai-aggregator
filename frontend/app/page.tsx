@@ -42,15 +42,15 @@ export default async function HomePage() {
   return (
     <>
       <section className="hero">
-        <h1>Новости из будущего, которое уже наступает</h1>
+      <h1>News from the future that is already happening</h1>
         <p>
-          2049.news — это медиа о будущем технологий, искусственного интеллекта и криптоэкономики. Здесь создают контент сами разработчики и предприниматели — люди, которые двигают прогресс.
+          2049.news is a media outlet about the future of technology, artificial intelligence, and cryptoeconomics. Here, content is created by developers and entrepreneurs themselves — the people who are driving progress.
         </p>
         <ul className="slogans">
-          <li><em>AI, технологии, крипто — взгляд в 2049</em></li>
-          <li><em>Место, где разработчики, предприниматели и визионеры пишут историю будущего</em></li>
-          <li><em>От киберпанка к реальности: разбор того, что меняет мир прямо сейчас</em></li>
-          <li><em>2049 — не просто дата, а метафора будущего</em></li>
+          <li><em>AI, technology, crypto — a look into 2049</em></li>
+          <li><em>A place where developers, entrepreneurs, and visionaries write the history of the future</em></li>
+          <li><em>From cyberpunk to reality: analyzing what is changing the world right now</em></li>
+          <li><em>2049 — not just a date, but a metaphor for the future</em></li>
         </ul>
       </section>
 
