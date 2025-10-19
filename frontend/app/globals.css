@@ -200,12 +200,11 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .crypto-change.up { color: #00d38f; }
 .crypto-change.down { color: #ff6b6b; }
 
-/* Ad banner wrap (twice wider than post image wrap) */
-.promo-wrap { width: calc(136% / 1.5); margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
-.promo-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
-.promo-wrap.feed { width: 100%; }
-.promo-frame { width: 100%; aspect-ratio: 5 / 1; background: var(--bg-elev); }
-.promo-frame img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
+/* Ad banner wrap (post pages: flexible within limits; feed: full width) */
+.promo-wrap { max-width: calc(136% / 1.5); width: 100%; margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
+.promo-wrap.feed { width: 100%; max-width: 100%; }
+.promo-frame { width: 100%; background: var(--bg-elev); display: flex; align-items: center; justify-content: center; padding: 6px; }
+.promo-wrap img { max-width: 100%; height: auto; max-height: 180px; display: block; object-fit: contain; object-position: center; }
 /* Mobile navigation */
 /* removed mobile drawer */
 
@@ -214,6 +213,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 	html, body { background-attachment: scroll; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
 	.site-footer { background: #0a0a12; width: 100%; }
+	.promo-wrap { max-width: 100%; }
+	.promo-wrap img { max-height: 140px; }
 	.hero { padding: 14px; }
 	.hero h1 { font-size: 24px; }
 	.section-title { font-size: 20px; }
