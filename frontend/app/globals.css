@@ -225,7 +225,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
-	html, body { background-attachment: scroll; }
+	html, body { background-attachment: scroll; background: #0a0a12; }
+	body::before { display: none; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	.site-header::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 100vw; background: #0a0a12; z-index: -1; pointer-events: none; }
 	.site-footer { position: relative; background: #0a0a12; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
