@@ -207,6 +207,9 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .promo-wrap.post { width: fit-content; max-width: calc(136% / 1.5); display: block; margin-left: auto; margin-right: auto; }
 .promo-wrap.feed { width: 100%; max-width: 100%; }
 .promo-frame { width: 100%; background: var(--bg-elev); display: flex; align-items: center; justify-content: center; padding: 6px; }
+/* Feed banners: enforce 16:9 container and prevent oversizing */
+.promo-wrap.feed .promo-frame { aspect-ratio: 16 / 9; padding: 0; }
+.promo-wrap.feed img { width: 100%; height: 100%; max-height: none; object-fit: contain; }
 .promo-wrap img { max-width: 100%; height: auto; max-height: 180px; display: block; object-fit: contain; object-position: center; }
 /* Mobile navigation */
 .burger-btn { display: inline-flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); }
