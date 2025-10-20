@@ -202,7 +202,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 
 /* Ad banner wrap (post pages: flexible within limits; feed: full width) */
 .promo-wrap { max-width: calc(136% / 1.5); width: 100%; margin: 10px auto; border-radius: 6px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); }
-.promo-wrap.post { width: auto; max-width: calc(136% / 1.5); display: inline-block; }
+.promo-wrap.post { width: fit-content; max-width: calc(136% / 1.5); display: block; margin-left: auto; margin-right: auto; }
 .promo-wrap.feed { width: 100%; max-width: 100%; }
 .promo-frame { width: 100%; background: var(--bg-elev); display: flex; align-items: center; justify-content: center; padding: 6px; }
 .promo-wrap img { max-width: 100%; height: auto; max-height: 180px; display: block; object-fit: contain; object-position: center; }
