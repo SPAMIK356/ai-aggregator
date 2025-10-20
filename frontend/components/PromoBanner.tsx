@@ -3,7 +3,7 @@
 type Props = { src: string; alt: string; variant?: 'post' | 'feed'; url: string };
 
 export default function PromoBanner({ src, alt, variant, url }: Props) {
-  const cls = variant === 'feed' ? 'promo-wrap feed' : 'promo-wrap';
+  const cls = variant === 'feed' ? 'promo-wrap feed' : 'promo-wrap post';
   return (
     <div
       className={cls}
