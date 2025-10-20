@@ -18,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="ru">
 			<body>
                 <header className="site-header">
+                    <div className="bleed bleed-header" aria-hidden="true"></div>
                     <div className="container">
                     <nav className="nav">
                         <a href="/" className="brand">2049.news</a>
@@ -28,8 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </div>
                 </header>
 				<main className="container">{children}</main>
-				<footer className="site-footer">
-					<div className="container">
+                <footer className="site-footer">
+                    <div className="bleed bleed-footer" aria-hidden="true"></div>
+                    <div className="container">
                         <p className="footer-about">
                             <strong>2049.news</strong> — a media about the future of technology, artificial intelligence, and the crypto economy. We publish news, opinion columns and analysis from practitioners — developers, founders and researchers.
                         </p>
