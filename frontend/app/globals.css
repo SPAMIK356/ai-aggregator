@@ -37,6 +37,7 @@ html, body {
 	color: var(--text);
 	font-family: 'FSEX300', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 	background-attachment: fixed;
+	-webkit-text-size-adjust: 100%;
 }
 
 body { display: flex; flex-direction: column; }
@@ -231,7 +232,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
-	html, body { background-attachment: scroll; background: #0a0a12; }
+	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: clip; }
 	body::before { display: none; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	.site-footer { position: relative; background: #0a0a12; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
