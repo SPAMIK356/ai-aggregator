@@ -28,7 +28,6 @@ html, body {
 	padding: 0;
 	margin: 0;
 	min-height: 100vh;
-	overflow-x: hidden;
 	background:
 		radial-gradient(1400px 800px at 80% -10%, rgba(168,85,247,0.15), transparent 60%), /* purple glow top-right */
 		radial-gradient(1200px 700px at 12% 18%, rgba(99,102,241,0.14), transparent 60%),  /* indigo glow top-left */
