@@ -16,7 +16,10 @@ export const metadata = {
 export const viewport = {
 	width: 'device-width',
 	initialScale: 1,
+	maximumScale: 1,
 	viewportFit: 'cover',
+	// @ts-ignore - Next allows 'no'|'yes'
+	userScalable: 'no',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
