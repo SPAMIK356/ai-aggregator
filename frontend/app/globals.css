@@ -28,6 +28,7 @@ html, body {
 	padding: 0;
 	margin: 0;
 	min-height: 100vh;
+	overflow-x: hidden;
 	background:
 		radial-gradient(1400px 800px at 80% -10%, rgba(168,85,247,0.15), transparent 60%), /* purple glow top-right */
 		radial-gradient(1200px 700px at 12% 18%, rgba(99,102,241,0.14), transparent 60%),  /* indigo glow top-left */
@@ -66,6 +67,7 @@ a:hover { color: var(--accent); }
 	backdrop-filter: saturate(120%) blur(6px);
 	border-bottom: 1px solid var(--border);
 	box-shadow: 0 1px 0 rgba(255,255,255,0.02);
+	width: 100%; left: 0; right: 0; display: block; isolation: isolate;
 }
 
 .nav {
@@ -132,7 +134,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Better typography for blockquotes and code */
 
 /* Footer */
-.site-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); background: #000; }
+.site-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); background: #000; width: 100%; left: 0; right: 0; display: block; isolation: isolate; }
 .footer-nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .footer-nav .nav-button {
 	opacity: .95;
@@ -223,8 +225,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
 	html, body { background-attachment: scroll; }
-	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; }
-	.site-footer { background: #0a0a12; width: 100%; }
+	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; }
+	.site-footer { background: #0a0a12; width: 100%; left: 0; right: 0; }
 	.promo-wrap { max-width: 100%; }
 	.promo-wrap img { max-height: 140px; }
 	.hero { padding: 14px; }
