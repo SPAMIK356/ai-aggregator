@@ -129,7 +129,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 }
 
 .prose { color: #e8ebf0; line-height: 1.6; }
-.prose img { max-width: 100%; border-radius: 8px; }
+.prose img { max-width: 100%; height: auto; border-radius: 8px; }
+.prose iframe, .prose video, .prose table { max-width: 100%; width: 100%; }
 
 /* Better typography for blockquotes and code */
 
@@ -213,6 +214,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .hb-line { width: 20px; height: 2px; background: #fff; display: block; }
 .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 50; }
 .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 85%; max-width: 340px; background: #0a0a12; border-left: 1px solid var(--border); transform: translateX(100%); transition: transform .2s ease; z-index: 60; box-shadow: -20px 0 40px rgba(0,0,0,.5); display: flex; flex-direction: column; }
+.drawer { contain: layout; overflow-x: clip; }
 .drawer.open { transform: translateX(0); }
 .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
 .drawer-close { background: transparent; color: #fff; border: 0; font-size: 28px; line-height: 1; padding: 4px 8px; }
@@ -227,7 +229,9 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 	html, body { background-attachment: scroll; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; }
 	.site-footer { background: #0a0a12; width: 100%; left: 0; right: 0; }
-	.promo-wrap { max-width: 100%; }
+	.promo-wrap { max-width: 100%; width: 100%; }
+	.promo-wrap.post { width: 100%; max-width: 100%; }
+	.thumb-wrap { width: 100%; }
 	.promo-wrap img { max-height: 140px; }
 	.hero { padding: 14px; }
 	.hero h1 { font-size: 24px; }
@@ -251,6 +255,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 	padding: 10px 14px;
 	min-width: 100%;
 	animation: ticker-move 40s linear infinite;
+	will-change: transform;
 }
 .ticker-item {
     color: #ff956f;
