@@ -211,6 +211,9 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .promo-wrap.feed .promo-frame { aspect-ratio: 16 / 9; padding: 0; }
 .promo-wrap.feed img { width: 100%; height: 100%; max-height: none; object-fit: contain; }
 .promo-wrap img { max-width: 100%; height: auto; max-height: 180px; display: block; object-fit: contain; object-position: center; }
+
+/* Neutral feed ad placement (no card chrome) */
+.feed-ad { margin: 10px 0; }
 /* Mobile navigation */
 .burger-btn { display: inline-flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); }
 .hb-line { width: 20px; height: 2px; background: #fff; display: block; }
