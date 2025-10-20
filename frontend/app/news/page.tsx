@@ -37,11 +37,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
         <h1>News</h1>
         <p>{desc}</p>
       </section>
-      <div className="meta" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <a href={`/news`} className="pill">All</a>
-        <a href={`/news?theme=AI`} className="pill">AI</a>
-        <a href={`/news?theme=CRYPTO`} className="pill">Crypto</a>
-      </div>
+      {/* filters moved to burger menu */}
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((n: any, idx: number) => (
           <>
