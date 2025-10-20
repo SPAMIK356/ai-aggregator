@@ -62,7 +62,8 @@ a:hover { color: var(--accent); }
 
 .site-header {
 	position: sticky; top: 0; z-index: 40;
-	background: transparent;
+	background: rgba(7,7,11,.8);
+	backdrop-filter: saturate(120%) blur(6px);
 	border-bottom: 1px solid var(--border);
 	box-shadow: 0 1px 0 rgba(255,255,255,0.02);
 }
@@ -131,12 +132,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Better typography for blockquotes and code */
 
 /* Footer */
-.site-footer { position: relative; margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); background: transparent; }
-
-/* Full-bleed background helpers */
-.bleed { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 100vw; pointer-events: none; }
-.bleed-header { background: #0a0a12; }
-.bleed-footer { background: #000; }
+.site-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); background: #000; }
 .footer-nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .footer-nav .nav-button {
 	opacity: .95;
