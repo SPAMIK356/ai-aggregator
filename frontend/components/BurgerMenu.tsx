@@ -25,6 +25,11 @@ export default function BurgerMenu() {
 					<strong>Menu</strong>
 					<button className="drawer-close" aria-label="Close" onClick={() => setOpen(false)}>×</button>
 				</div>
+				<div className="drawer-search">
+					<form action="/search" method="get">
+						<input name="q" type="text" placeholder="Search…" aria-label="Search" />
+					</form>
+				</div>
 				<nav className="drawer-nav">
 					<a href="/" onClick={() => setOpen(false)} className="nav-button">Home</a>
 					<a href="/news" onClick={() => setOpen(false)} className="nav-button">Future News</a>

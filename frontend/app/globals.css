@@ -215,6 +215,8 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
 .drawer-close { background: transparent; color: #fff; border: 0; font-size: 28px; line-height: 1; padding: 4px 8px; }
 .drawer-nav { display: flex; flex-direction: column; gap: 12px; padding: 12px 14px; }
+.drawer-search { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.drawer-search input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elev); color: #fff; }
 .drawer-sep { height: 1px; background: var(--border); margin: 10px 0; }
 .drawer-section { color: #cfd5df; font-weight: 700; margin-top: 6px; }
 
