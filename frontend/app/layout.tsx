@@ -32,8 +32,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<a href="/" className="brand">2049.news</a>
 						<div className="desktop-nav">
 						<a href="/" className="nav-button">Home</a>
-						<a href="/news" className="nav-button"><Image className="nav-ico" src={newsIcon} alt="" width={16} height={16} /> Future News</a>
-						<a href="/news?theme=CRYPTO" className="nav-button"><Image className="nav-ico" src={authorsIcon} alt="" width={16} height={16} /> Crypto</a>
+						<a href="/news?theme=CRYPTO" className="nav-button"><Image className="nav-ico" src={newsIcon} alt="" width={16} height={16} /> Crypto</a>
+						<a href="/columns" className="nav-button"><Image className="nav-ico" src={authorsIcon} alt="" width={16} height={16} /> Insider Blogs</a>
 						<a href="/contact" className="nav-button"><Image className="nav-ico" src={contactIcon} alt="" width={16} height={16} /> Contacts</a>
 						</div>
 						<span className="spacer" />
@@ -56,12 +56,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <p className="footer-about">
                             <strong>2049.news</strong> — a media about the future of technology, artificial intelligence, and the crypto economy. We publish news, opinion columns and analysis from practitioners — developers, founders and researchers.
                         </p>
-						<nav className="footer-nav" style={{ justifyContent: 'center' }}>
-							<a href="/" className="nav-button">Home</a>
-							<a href="/news" className="nav-button">Future News</a>
-							<a href="/columns" className="nav-button">Insider Blogs</a>
-							<a href="/contact" className="nav-button">Contacts</a>
-						</nav>
+					<nav className="footer-nav" style={{ justifyContent: 'center' }}>
+						<a href="/" className="nav-button">Home</a>
+						<a href="/news?theme=CRYPTO" className="nav-button">Crypto</a>
+						<a href="/columns" className="nav-button">Insider Blogs</a>
+						<a href="/contact" className="nav-button">Contacts</a>
+					</nav>
 						<div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
 							<BurgerMenu />
 						</div>
