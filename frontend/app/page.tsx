@@ -12,8 +12,20 @@ async function safeFetchList<T>(url: string): Promise<{ results: T[] }> {
   }
 }
 
-function stripHtml(input: string): string {
-  return (input || "").replace(/<[^>]+>/g, "");
+function stripContent(input: string): string {
+  const raw = String(input || "");
+  return raw
+    // 1) drop HTML tags
+    .replace(/<[^>]+>/g, " ")
+    // 2) convert markdown links [text](url) -> text
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    // 3) remove bare URLs
+    .replace(/https?:\/\/\S+/g, "")
+    // 4) remove emphasis markers and backticks
+    .replace(/[\*_`]+/g, "")
+    // 5) collapse whitespace
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 type UnifiedItem = {
@@ -83,7 +95,7 @@ export default async function HomePage() {
                 {n.description && (
                   <p className="snippet">
                     {(() => {
-                      const text = stripHtml(n.description);
+                      const text = stripContent(n.description);
                       return text.length > 220 ? text.slice(0, 220) + '…' : text;
                     })()}
                   </p>
