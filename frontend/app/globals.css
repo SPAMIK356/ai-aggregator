@@ -234,6 +234,9 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .drawer-sep { height: 1px; background: var(--border); margin: 10px 0; }
 .drawer-section { color: #cfd5df; font-weight: 700; margin-top: 6px; }
 
+/* Lock body scroll and ensure solid overlay when menu is open */
+body.menu-open { overflow: hidden; }
+
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
 	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: clip; }
