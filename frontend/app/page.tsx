@@ -67,7 +67,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 24, alignItems: 'start' }}>
+      <div className="home-grid">
         <section>
           <h2 className="section-title">Новости будущего</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
