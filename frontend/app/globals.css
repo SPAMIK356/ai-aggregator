@@ -262,6 +262,7 @@ body.menu-open { overflow: hidden; }
 @media (max-width: 767px) {
 	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: clip; }
 	body::before { display: none; }
+	.container { padding: 12px; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	.site-footer { position: relative; background: #0a0a12; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	/* Use bleed without pseudo-elements to avoid 100vw scroll/scale quirks */
@@ -278,6 +279,15 @@ body.menu-open { overflow: hidden; }
 	.snippet { font-size: 14px; }
 	.thumb { height: 160px; }
 }
+
+/* Ensure embedded media never overflow viewport */
+img, video, iframe { max-width: 100%; height: auto; }
+
+/* Prevent long words/URLs from causing horizontal scroll */
+.card-title, .snippet, .footer-about, .prose, .hero p { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Make tables scrollable horizontally rather than expanding layout */
+.prose table { display: block; overflow-x: auto; }
 
 /* Hide any leftover desktop nav on small screens */
 @media (max-width: 1023px) { .desktop-nav { display: none; } }
