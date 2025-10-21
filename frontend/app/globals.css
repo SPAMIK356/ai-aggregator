@@ -294,7 +294,8 @@ body.menu-open { overflow: hidden; }
 	.hero, .ticker, .home-grid, .cards { width: 100%; max-width: 100%; overflow-x: hidden; }
 	/* Ticker adjustments to avoid layout expansion */
 	.ticker { overflow: hidden; }
-	.ticker-track { padding-left: 12px; padding-right: 12px; }
+	.ticker-track { padding-left: 12px; padding-right: 12px; white-space: normal; flex-wrap: wrap; animation: none; }
+	.ticker-item { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* Ensure embedded media never overflow viewport */
