@@ -45,7 +45,7 @@ export default function BurgerMenu() {
                         <nav className="drawer-nav">
                             <a href="/" onClick={() => setOpen(false)} className="nav-button">Home</a>
                             <a href="/news" onClick={() => setOpen(false)} className="nav-button">Future News</a>
-                            <a href="/columns" onClick={() => setOpen(false)} className="nav-button">Insider Blogs</a>
+                            <a href="/news?theme=CRYPTO" onClick={() => setOpen(false)} className="nav-button">Crypto</a>
                             <a href="/contact" onClick={() => setOpen(false)} className="nav-button">Contacts</a>
                             <a href="/about" onClick={() => setOpen(false)} className="nav-button">About</a>
                             <a href="/privacy" onClick={() => setOpen(false)} className="nav-button">Privacy Policy</a>

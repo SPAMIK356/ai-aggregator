@@ -31,13 +31,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<nav className="nav">
 						<a href="/" className="brand">2049.news</a>
 						<div className="desktop-nav">
-							<a href="/" className="nav-button">Home</a>
-							<a href="/news" className="nav-button">Future News</a>
-							<a href="/columns" className="nav-button">Insider Blogs</a>
-							<a href="/contact" className="nav-button">Contacts</a>
+						<a href="/" className="nav-button">Home</a>
+						<a href="/news" className="nav-button"><Image className="nav-ico" src={newsIcon} alt="" width={16} height={16} /> Future News</a>
+						<a href="/news?theme=CRYPTO" className="nav-button"><Image className="nav-ico" src={authorsIcon} alt="" width={16} height={16} /> Crypto</a>
+						<a href="/contact" className="nav-button"><Image className="nav-ico" src={contactIcon} alt="" width={16} height={16} /> Contacts</a>
 						</div>
 						<span className="spacer" />
-						<CryptoWidget />
+					{/* mobile search (hidden on desktop) */}
+					<form className="mobile-search" action="/search" method="get">
+						<input name="q" type="text" placeholder="Search…" aria-label="Search" />
+					</form>
+					<CryptoWidget />
 						<BurgerMenu />
 					</nav>
                     </div>

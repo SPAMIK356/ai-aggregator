@@ -80,8 +80,17 @@ a:hover { color: var(--accent); }
 
 .brand { font-size: 26px; letter-spacing: .5px; }
 .nav-button { letter-spacing: .4px; }
+.nav-button .nav-ico { vertical-align: -2px; margin-right: 8px; opacity: .9; }
 
 .spacer { margin-left: auto; }
+
+/* mobile search field inside header */
+.mobile-search { display: inline-flex; align-items: center; margin-right: 10px; }
+.mobile-search input { 
+	appearance: none; border: 1px solid var(--border); background: rgba(20,20,28,.85);
+	color: #fff; border-radius: 999px; padding: 6px 10px; font-size: 14px; width: 48vw; max-width: 260px;
+}
+@media (min-width: 1024px) { .mobile-search { display: none; } }
 
 .section-title { margin: 8px 0 12px; font-size: 22px; color: #fff; }
 
