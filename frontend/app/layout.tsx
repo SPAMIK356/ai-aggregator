@@ -44,6 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<CryptoWidget />
 						<BurgerMenu />
 					</nav>
+				{/* Mobile crypto strip under the nav */}
+				<div className="mobile-crypto">
+					<CryptoWidget />
+				</div>
                     </div>
                 </header>
 				<main className="container">{children}</main>
