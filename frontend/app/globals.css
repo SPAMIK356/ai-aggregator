@@ -222,7 +222,7 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 /* Mobile navigation */
 .burger-btn { display: inline-flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); }
 .hb-line { width: 20px; height: 2px; background: #fff; display: block; }
-.backdrop { position: fixed; inset: 0; background: #0a0a12; z-index: 50; }
+.backdrop { position: fixed; inset: 0; background: rgba(10,10,18,.65); z-index: 50; }
 .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 85%; max-width: 340px; background: #0a0a12; border-left: 1px solid var(--border); transform: translateX(100%); transition: transform .2s ease; z-index: 60; box-shadow: -20px 0 40px rgba(0,0,0,.6); display: flex; flex-direction: column; }
 .drawer { contain: layout; overflow-x: clip; }
 .drawer.open { transform: translateX(0); }
