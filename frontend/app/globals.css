@@ -80,7 +80,14 @@ a:hover { color: var(--accent); }
 
 .brand { font-size: 26px; letter-spacing: .5px; }
 .nav-button { letter-spacing: .4px; }
-.nav-button .nav-ico { vertical-align: -2px; margin-right: 8px; opacity: .9; }
+/* Align header nav buttons and icons on a single baseline */
+.nav .nav-button { display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
+.desktop-nav .nav-button { padding: 6px 10px; border-radius: 8px; border: 1px solid transparent; }
+.desktop-nav .nav-button:hover { border-color: var(--border); background: rgba(255,255,255,.02); }
+.nav-button .nav-ico { width: 16px; height: 16px; flex: 0 0 16px; display: block; opacity: .9; }
+img.nav-ico { max-width: none; width: 16px; height: 16px; }
+/* Ensure header height stable */
+.site-header .nav { min-height: 48px; }
 
 .spacer { margin-left: auto; }
 
