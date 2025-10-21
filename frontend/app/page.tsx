@@ -70,11 +70,11 @@ export default async function HomePage() {
         <div className="ticker-track">
           <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n: any) => (
-            <span key={`t1-${n.id}`} className="ticker-item">{stripContent(n.title)}</span>
+            <span key={`t1-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
           <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n: any) => (
-            <span key={`t2-${n.id}`} className="ticker-item">{stripContent(n.title)}</span>
+            <span key={`t2-${n.id}`} className="ticker-item">{n.title}</span>
           ))}
         </div>
       </div>
