@@ -271,7 +271,7 @@ body.menu-open { overflow: hidden; }
 
 /* Mobile typography and spacing */
 @media (max-width: 767px) {
-	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: clip; }
+	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: hidden; }
 	body::before { display: none; }
 	.container { padding: 12px; }
 	.site-header { background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
@@ -289,6 +289,11 @@ body.menu-open { overflow: hidden; }
 	.section-title { font-size: 20px; }
 	.snippet { font-size: 14px; }
 	.thumb { height: 160px; }
+	/* Ensure main feed blocks never exceed viewport width */
+	.hero, .ticker, .home-grid, .cards { width: 100%; max-width: 100%; overflow-x: clip; }
+	/* Ticker adjustments to avoid layout expansion */
+	.ticker { overflow: hidden; }
+	.ticker-track { padding-left: 12px; padding-right: 12px; }
 }
 
 /* Ensure embedded media never overflow viewport */
