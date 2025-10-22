@@ -129,7 +129,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: celery -A ai_aggregator beat --loglevel=INFO --without-gossip --without-mingle
+    command: celery -A ai_aggregator beat --loglevel=INFO
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key}
       DEBUG: ${DEBUG:-1}
