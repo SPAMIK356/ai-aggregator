@@ -277,7 +277,7 @@ def fetch_telegram_channels() -> dict:
 	client = TelegramClient(StringSession(string_session), int(api_id), str(api_hash))
 	# Use context manager to connect/disconnect synchronously
 	with client:
-	for ch in TelegramChannel.objects.filter(is_active=True):
+		for ch in TelegramChannel.objects.filter(is_active=True):
 			try:
 				entity = ch.username if ch.username.startswith("@") else f"@{ch.username}"
 				# Skip invite links or invalid entities
@@ -326,9 +326,9 @@ def fetch_telegram_channels() -> dict:
 							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
 								skipped += 1
 								continue
-							# Try to build image URL
+						# Try to build image URL
 						img_url = ""
-							try:
+						try:
 							if ch.parse_images and getattr(m, "photo", None):
 									target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
 									target_dir.mkdir(parents=True, exist_ok=True)
@@ -362,7 +362,7 @@ def fetch_telegram_channels() -> dict:
 								# If anything fails, fall back to t.me permalink
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.exception("TG image download failed; using permalink url=%s", img_url)
-							# Final fallback if no local image was produced but message includes a photo entity
+						# Final fallback if no local image was produced but message includes a photo entity
 						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.info("TG image fallback to permalink url=%s", img_url)
