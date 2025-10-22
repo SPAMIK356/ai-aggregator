@@ -10,22 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='AdBanner',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=255)),
-                ('url', models.URLField()),
-                ('image', models.ImageField(upload_to='ads/')),
-                ('is_active', models.BooleanField(default=True)),
-                ('weight', models.PositiveIntegerField(default=1)),
-            ],
-            options={
-                'ordering': ('-updated_at', 'id'),
-            },
-        ),
         migrations.AddField(
             model_name='newssource',
             name='parse_images',
