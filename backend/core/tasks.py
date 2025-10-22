@@ -277,7 +277,7 @@ def fetch_telegram_channels() -> dict:
 	client = TelegramClient(StringSession(string_session), int(api_id), str(api_hash))
 	# Use context manager to connect/disconnect synchronously
 	with client:
-		for ch in TelegramChannel.objects.filter(is_active=True):
+	for ch in TelegramChannel.objects.filter(is_active=True):
 			try:
 				entity = ch.username if ch.username.startswith("@") else f"@{ch.username}"
 				# Skip invite links or invalid entities
@@ -327,9 +327,9 @@ def fetch_telegram_channels() -> dict:
 								skipped += 1
 								continue
 							# Try to build image URL
-							img_url = ""
+						img_url = ""
 							try:
-								if getattr(m, "photo", None):
+							if ch.parse_images and getattr(m, "photo", None):
 									target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
 									target_dir.mkdir(parents=True, exist_ok=True)
 									saved = client.download_media(m, file=str(target_dir))
@@ -363,7 +363,7 @@ def fetch_telegram_channels() -> dict:
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.exception("TG image download failed; using permalink url=%s", img_url)
 							# Final fallback if no local image was produced but message includes a photo entity
-							if (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 								logger.info("TG image fallback to permalink url=%s", img_url)
 							# Determine theme: use AI output if present else channel default else AI
@@ -476,7 +476,7 @@ def fetch_websites() -> dict:
 							skipped += 1
 							continue
 						img = ""
-						if ws.image_selector:
+						if ws.parse_images and ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
 							if img_el and (img_el.get('src') or img_el.get('data-src')):
 								img = img_el.get('src') or img_el.get('data-src')

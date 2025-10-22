@@ -21,6 +21,7 @@ class NewsSource(TimeStampedModel):
 	is_active = models.BooleanField(default=True)
 	# Optional default theme to assign to items ingested from this source
 	default_theme = models.CharField(max_length=16, choices=[("AI", "AI"), ("CRYPTO", "CRYPTO")], blank=True)
+	parse_images = models.BooleanField(default=True)
 
 	def __str__(self) -> str:
 		return self.title or self.url
@@ -109,6 +110,7 @@ class TelegramChannel(TimeStampedModel):
 	last_message_id = models.BigIntegerField(null=True, blank=True)
 	# Optional default theme to assign to items from this channel
 	default_theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, blank=True)
+	parse_images = models.BooleanField(default=True)
 
 	def __str__(self) -> str:
 		return self.title or self.username
@@ -141,6 +143,7 @@ class WebsiteSource(TimeStampedModel):
 	url_selector = models.CharField(max_length=255)
 	desc_selector = models.CharField(max_length=255, blank=True)
 	image_selector = models.CharField(max_length=255, blank=True)
+	parse_images = models.BooleanField(default=True)
 	# Optional default theme to assign to items from this website
 	default_theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, blank=True)
 

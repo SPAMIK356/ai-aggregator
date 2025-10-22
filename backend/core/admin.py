@@ -7,8 +7,8 @@ from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramCha
 
 @admin.register(NewsSource)
 class NewsSourceAdmin(admin.ModelAdmin):
-	list_display = ("title", "url", "is_active", "created_at")
-	list_filter = ("is_active",)
+	list_display = ("title", "url", "is_active", "parse_images", "created_at")
+	list_filter = ("is_active", "parse_images")
 	search_fields = ("title", "url")
 
 
@@ -44,17 +44,17 @@ class OutboxEventAdmin(admin.ModelAdmin):
 
 @admin.register(TelegramChannel)
 class TelegramChannelAdmin(admin.ModelAdmin):
-	list_display = ("username", "title", "is_active", "default_theme", "last_message_id", "updated_at")
-	list_filter = ("is_active", "default_theme")
+	list_display = ("username", "title", "is_active", "parse_images", "default_theme", "last_message_id", "updated_at")
+	list_filter = ("is_active", "parse_images", "default_theme")
 	search_fields = ("username", "title")
 
 
 @admin.register(WebsiteSource)
 class WebsiteSourceAdmin(admin.ModelAdmin):
-	list_display = ("name", "url", "is_active", "default_theme", "created_at")
-	list_filter = ("is_active", "default_theme")
+	list_display = ("name", "url", "is_active", "parse_images", "default_theme", "created_at")
+	list_filter = ("is_active", "parse_images", "default_theme")
 	search_fields = ("name", "url")
-	fields = ("name", "url", "is_active", "default_theme", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
+	fields = ("name", "url", "is_active", "parse_images", "default_theme", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
 
 
 @admin.register(RewriterConfig)

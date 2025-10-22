@@ -81,7 +81,7 @@ export default async function HomePage() {
 
       <div className="home-grid">
         <section>
-          <h2 className="section-title">Новости будущего</h2>
+          <h2 className="section-title">News from the future</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {newsData.results.map((n: any) => (
               <a key={n.id} href={`/news/${n.id}`} className="card">
@@ -106,7 +106,7 @@ export default async function HomePage() {
         </section>
 
         <section>
-          <h2 className="section-title">Блоги от инсайдеров</h2>
+          <h2 className="section-title">Insider Blogs</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {columnsData.results.map((c: any) => (
               <a key={c.id} href={`/columns/${c.id}`} className="card">
