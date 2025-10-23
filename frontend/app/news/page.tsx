@@ -6,7 +6,14 @@ async function fetchJson(url: string) {
 
 function stripContent(input: string): string {
   const raw = String(input || "");
-  const decoded = raw
+  // Remove fenced code blocks and style/pre/code sections entirely
+  const withoutCode = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/~~~[\s\S]*?~~~/g, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<pre[\s\S]*?<\/pre>/gi, " ")
+    .replace(/<code[\s\S]*?<\/code>/gi, " ");
+  const decoded = withoutCode
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")

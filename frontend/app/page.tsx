@@ -14,16 +14,23 @@ async function safeFetchList<T>(url: string): Promise<{ results: T[] }> {
 
 function stripContent(input: string): string {
   const raw = String(input || "");
-  return raw
-    // 1) drop HTML tags
+  const withoutCode = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/~~~[\s\S]*?~~~/g, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<pre[\s\S]*?<\/pre>/gi, " ")
+    .replace(/<code[\s\S]*?<\/code>/gi, " ");
+  return withoutCode
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
     .replace(/<[^>]+>/g, " ")
-    // 2) convert markdown links [text](url) -> text
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
-    // 3) remove bare URLs
     .replace(/https?:\/\/\S+/g, "")
-    // 4) remove emphasis markers and backticks
     .replace(/[\*_`]+/g, "")
-    // 5) collapse whitespace
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -70,11 +77,11 @@ export default async function HomePage() {
         <div className="ticker-track">
           <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n: any) => (
-            <span key={`t1-${n.id}`} className="ticker-item">{n.title}</span>
+            <span key={`t1-${n.id}`} className="ticker-item">{stripContent(n.title)}</span>
           ))}
           <span className="ticker-item">{tickerDate}</span>
           {newsData.results.slice(0, 8).map((n: any) => (
-            <span key={`t2-${n.id}`} className="ticker-item">{n.title}</span>
+            <span key={`t2-${n.id}`} className="ticker-item">{stripContent(n.title)}</span>
           ))}
         </div>
       </div>
