@@ -7,6 +7,7 @@ import contactIcon from '../icons/Contact.png';
 import CryptoWidget from '../components/CryptoWidget';
 import dynamic from 'next/dynamic';
 const BurgerMenu = dynamic(() => import('../components/BurgerMenu'), { ssr: false });
+const MobileHeaderScroll = dynamic(() => import('../components/MobileHeaderScroll'), { ssr: false });
 
 export const metadata = {
 	title: '2049.news',
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="ru">
 			<body>
+				<MobileHeaderScroll />
                 <header className="site-header">
                     <div className="container">
 					<nav className="nav">

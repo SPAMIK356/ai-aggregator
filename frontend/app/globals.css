@@ -62,13 +62,15 @@ a:hover { color: var(--accent); }
 .container { max-width: 980px; margin: 0 auto; padding: 16px; }
 
 .site-header {
-	position: sticky; top: 0; z-index: 40;
-	background: rgba(7,7,11,.8);
-	backdrop-filter: saturate(120%) blur(6px);
-	border-bottom: 1px solid var(--border);
-	box-shadow: 0 1px 0 rgba(255,255,255,0.02);
-	width: 100%; left: 0; right: 0; display: block; isolation: isolate;
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(7,7,11,.8);
+    backdrop-filter: saturate(120%) blur(6px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02);
+    width: 100%; left: 0; right: 0; display: block; isolation: isolate;
+    transform: translateY(0); transition: transform .2s ease;
 }
+body.header-hidden .site-header { transform: translateY(calc(-1 * var(--mobileHeaderH, 64px))); }
 
 .nav {
 	display: flex; gap: 16px; align-items: center;
@@ -275,14 +277,14 @@ body.menu-open { overflow: hidden; }
 	html, body { background-attachment: scroll; background: #0a0a12; max-width: 100%; overflow-x: hidden; }
 	body::before { display: none; }
 	.container { padding: 12px; }
-	.site-header { position: fixed; top: 0; z-index: 40; background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
+    .site-header { position: fixed; top: 0; z-index: 40; background: #0a0a12; backdrop-filter: none; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	.site-footer { position: relative; background: #0a0a12; width: 100%; left: 0; right: 0; isolation: isolate; overflow: visible; }
 	/* Use bleed without pseudo-elements to avoid 100vw scroll/scale quirks */
 	.site-header, .site-footer { box-shadow: 0 0 0 100vmax #0a0a12, 0 1px 0 rgba(255,255,255,0.02); clip-path: inset(0 -100vmax); }
 	.site-header::before, .site-footer::before { content: none !important; }
 	.site-header .container, .site-footer .container { position: relative; z-index: 1; }
-	/* Push content below fixed header */
-	main.container { padding-top: 64px; }
+    /* Push content below fixed header using measured height */
+    main.container { padding-top: calc(var(--mobileHeaderH, 64px) + 8px); }
 	.promo-wrap { max-width: 100%; width: 100%; }
 	.promo-wrap.post { width: 100%; max-width: 100%; }
 	.thumb-wrap { width: 100%; }
