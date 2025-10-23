@@ -217,7 +217,7 @@ def run_parser() -> dict:
 
 @shared_task
 def deliver_outbox() -> dict:
-	from .models import OutboxEvent
+    from .models import OutboxEvent, NewsItem
 
 	webhook_url = getattr(settings, "WEBHOOK_URL", "")
 	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
@@ -239,14 +239,43 @@ def deliver_outbox() -> dict:
 					"payload": event.payload,
 				})
 				ok = 200 <= resp.status_code < 300
-			# Fallback to Telegram bot
+            # Fallback to Telegram bot
 			if (not ok) and bot_token and channel and Bot:
 				try:
 					bot = Bot(token=bot_token)
 					payload = event.payload or {}
-					t = (payload.get("title") or "New post").strip()
-					body = (payload.get("body") or "").strip()
-					img = (payload.get("image_url") or "").strip()
+                    t = (payload.get("title") or "New post").strip()
+                    body = (payload.get("body") or "").strip()
+                    img = (payload.get("image_url") or "").strip()
+
+                    # If this is a NewsItem event, re-fetch from DB and skip Telegram-origin items
+                    try:
+                        if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
+                            nid = payload.get("id")
+                            if nid:
+                                ni = NewsItem.objects.filter(pk=int(nid)).only("title", "description", "image_url", "image_file", "original_url").first()
+                                if ni:
+                                    orig = (ni.original_url or "").lower()
+                                    if "t.me/" in orig or "telegram." in orig:
+                                        # Skip Telegram-origin items for bot posting
+                                        raise RuntimeError("skip_telegram_origin")
+                                    t = (ni.title or t).strip()
+                                    body = (ni.description or body or "").strip()
+                                    if not img:
+                                        img = (ni.image_url or "").strip()
+                                        if not img and getattr(ni, "image_file", None):
+                                            try:
+                                                img = ni.image_file.url  # type: ignore[attr-defined]
+                                            except Exception:
+                                                img = ""
+                    except RuntimeError as _skip:
+                        # Mark as delivered to avoid retry loop on skipped items
+                        event.delivery_attempts += 1
+                        event.mark_delivered()
+                        skipped += 1
+                        continue
+                    except Exception:
+                        pass
 					text = f"<b>{t}</b>\n\n{body}".strip()
 					if img:
 						try:
