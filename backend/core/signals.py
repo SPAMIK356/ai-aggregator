@@ -13,8 +13,10 @@ from .models import AuthorColumn, NewsItem, OutboxEvent
 @dataclass
 class CreatedEvent:
 	post_type: str
+	id: int
 	title: str
-	link: str
+	body: str
+	image_url: str
 
 	def to_payload(self) -> Dict[str, str]:
 		return asdict(self)
@@ -28,11 +30,20 @@ def enqueue_outbox(event_type: str, payload: Dict) -> None:
 def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 	if not created:
 		return
-	payload = CreatedEvent(
-		post_type="news",
-		title=instance.title,
-		link=instance.original_url,
-	).to_payload()
+    img = instance.image_url or ""
+    if not img:
+        try:
+            if instance.image_file:
+                img = instance.image_file.url  # type: ignore[attr-defined]
+        except Exception:
+            img = ""
+    payload = CreatedEvent(
+        post_type="news",
+        id=instance.pk,
+        title=instance.title,
+        body=instance.description or "",
+        image_url=img,
+    ).to_payload()
 	enqueue_outbox(OutboxEvent.EVENT_NEWS_CREATED, payload)
 
 
@@ -40,11 +51,20 @@ def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 def on_authorcolumn_created(sender, instance: AuthorColumn, created: bool, **kwargs):
 	if not created:
 		return
-	payload = CreatedEvent(
-		post_type="column",
-		title=instance.title,
-		link=f"/columns/{instance.pk}",
-	).to_payload()
+    img = instance.image_url or ""
+    if not img:
+        try:
+            if instance.image_file:
+                img = instance.image_file.url  # type: ignore[attr-defined]
+        except Exception:
+            img = ""
+    payload = CreatedEvent(
+        post_type="column",
+        id=instance.pk,
+        title=instance.title,
+        body=instance.content_body or "",
+        image_url=img,
+    ).to_payload()
 	enqueue_outbox(OutboxEvent.EVENT_COLUMN_CREATED, payload)
 
 

@@ -244,11 +244,20 @@ def deliver_outbox() -> dict:
 				try:
 					bot = Bot(token=bot_token)
 					payload = event.payload or {}
-					t = payload.get("title") or "New post"
-					link = payload.get("link") or ""
-					msg = f"<b>{t}</b>\n{link}".strip()
-					bot.send_message(chat_id=channel, text=msg, parse_mode="HTML", disable_web_page_preview=True)
-					ok = True
+					t = (payload.get("title") or "New post").strip()
+					body = (payload.get("body") or "").strip()
+					img = (payload.get("image_url") or "").strip()
+					text = f"<b>{t}</b>\n\n{body}".strip()
+					if img:
+						try:
+							bot.send_photo(chat_id=channel, photo=img, caption=text[:1024], parse_mode="HTML")
+							ok = True
+						except Exception:
+							bot.send_message(chat_id=channel, text=text[:4096], parse_mode="HTML", disable_web_page_preview=True)
+							ok = True
+					else:
+						bot.send_message(chat_id=channel, text=text[:4096], parse_mode="HTML", disable_web_page_preview=True)
+						ok = True
 				except Exception as _tg_exc:
 					ok = False
 			if ok:
