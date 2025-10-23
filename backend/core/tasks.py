@@ -21,6 +21,11 @@ from urllib.parse import urlparse
 import re
 from html import escape
 from .rewriter import rewrite_article
+import json
+try:
+	from telegram import Bot
+except Exception:
+	Bot = None
 logger = get_task_logger(__name__)
 
 try:
@@ -215,24 +220,44 @@ def deliver_outbox() -> dict:
 	from .models import OutboxEvent
 
 	webhook_url = getattr(settings, "WEBHOOK_URL", "")
+	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
+	channel = getattr(settings, "TELEGRAM_CHANNEL", "")
 	if not webhook_url:
-		return {"delivered": 0, "skipped": 0, "reason": "no webhook"}
+		# If webhook not configured, we can still deliver to Telegram if configured
+		if not (bot_token and channel and Bot):
+			return {"delivered": 0, "skipped": 0, "reason": "no delivery configured"}
 
 	delivered = 0
 	skipped = 0
 	for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
 		try:
-			resp = requests.post(webhook_url, json={
-				"event_type": event.event_type,
-				"payload": event.payload,
-			})
-			if 200 <= resp.status_code < 300:
+			ok = False
+			# Prefer webhook if configured
+			if webhook_url:
+				resp = requests.post(webhook_url, json={
+					"event_type": event.event_type,
+					"payload": event.payload,
+				})
+				ok = 200 <= resp.status_code < 300
+			# Fallback to Telegram bot
+			if (not ok) and bot_token and channel and Bot:
+				try:
+					bot = Bot(token=bot_token)
+					payload = event.payload or {}
+					t = payload.get("title") or "New post"
+					link = payload.get("link") or ""
+					msg = f"<b>{t}</b>\n{link}".strip()
+					bot.send_message(chat_id=channel, text=msg, parse_mode="HTML", disable_web_page_preview=True)
+					ok = True
+				except Exception as _tg_exc:
+					ok = False
+			if ok:
 				event.delivery_attempts += 1
 				event.mark_delivered()
 				delivered += 1
 			else:
 				event.delivery_attempts += 1
-				event.last_error = f"HTTP {resp.status_code}: {resp.text[:500]}"
+				event.last_error = (f"Webhook failed" if webhook_url else "")
 				event.save(update_fields=["delivery_attempts", "last_error"])
 				skipped += 1
 		except Exception as exc:

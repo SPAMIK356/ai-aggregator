@@ -4,17 +4,22 @@ async function fetchJson(url: string) {
   return res.json();
 }
 
-function stripHtmlStrong(input: string): string {
-  let s = (input || "").replace(/<[^>]+>/g, " ");
-  s = s
+function stripContent(input: string): string {
+  const raw = String(input || "");
+  const decoded = raw
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
-  s = s.replace(/\s+/g, " ").trim();
-  return s;
+  return decoded
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\*_`]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 import AdBanner from "../../components/AdBanner";
@@ -52,7 +57,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
             {n.description && (
               <p className="snippet">
                 {(() => {
-                  const text = stripHtmlStrong(n.description);
+                  const text = stripContent(n.description);
                   return text.length > 300 ? text.slice(0, 300) + '…' : text;
                 })()}
               </p>

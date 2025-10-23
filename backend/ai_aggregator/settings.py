@@ -146,4 +146,8 @@ REWRITER_ENABLED = os.getenv("REWRITER_ENABLED", "0") == "1"
 HASHTAG_SLUG_CHOICES = [("ai","AI"), ("crypto","CRYPTO")]
 # Celery beat schedule configured in celery.py
 
+# Telegram bot delivery (optional)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHANNEL = os.getenv("TELEGRAM_CHANNEL", "")
+
 

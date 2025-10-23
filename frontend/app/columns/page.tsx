@@ -4,8 +4,22 @@ async function fetchJson(url: string) {
   return res.json();
 }
 
-function stripHtml(input: string): string {
-  return (input || "").replace(/<[^>]+>/g, "");
+function stripContent(input: string): string {
+  const raw = String(input || "");
+  const decoded = raw
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  return decoded
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\*_`]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 import AdBanner from "../../components/AdBanner";
@@ -32,7 +46,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
             {c.content_body && (
               <p className="snippet">
                 {(() => {
-                  const text = stripHtml(c.content_body);
+                  const text = stripContent(c.content_body);
                   return text.length > 220 ? text.slice(0, 220) + '…' : text;
                 })()}
               </p>
