@@ -268,7 +268,7 @@ def deliver_outbox() -> dict:
 												img = ni.image_file.url  # type: ignore[attr-defined]
 											except Exception:
 												img = ""
-						except RuntimeError as _skip:
+					except RuntimeError as _skip:
 						# Mark as delivered to avoid retry loop on skipped items
 						event.delivery_attempts += 1
 						event.mark_delivered()
