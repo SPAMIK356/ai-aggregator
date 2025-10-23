@@ -30,6 +30,10 @@ def enqueue_outbox(event_type: str, payload: Dict) -> None:
 def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 	if not created:
 		return
+	# Skip Telegram-origin items so the bot posts only site news
+	orig = (instance.original_url or "").lower()
+	if "t.me/" in orig or "telegram." in orig:
+		return
 	img = instance.image_url or ""
 	if not img:
 		try:
