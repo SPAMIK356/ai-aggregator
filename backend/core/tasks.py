@@ -441,37 +441,37 @@ def fetch_telegram_channels() -> dict:
 							logger.exception("TG image download failed; using permalink url=%s", img_url)
 						# Final fallback if no local image was produced but message includes a photo entity
 						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
-							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-							logger.info("TG image fallback to permalink url=%s", img_url)
-							# Determine theme: use AI output if present else channel default else AI
-							theme_val = None
-							try:
-								t = (rew or {}).get("theme") if isinstance(rew, dict) else None
-								if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
-									theme_val = t.strip().upper()
-							except Exception:
-								theme_val = None
-							n = NewsItem.objects.create(
-								title=(rew.get("title") or orig_title)[:500],
-								original_url=url,
-								description=(rew.get("content") or orig_body)[:10000],
-								image_url=img_url,
-								published_at=published_at,
-								source_name=ch.title or ch.username,
-								theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
-							)
-							# Attach hashtags if provided and valid
-							try:
-								tags = rew.get("hashtags") if isinstance(rew, dict) else None
-								if isinstance(tags, list) and tags:
-									slugs = [str(s).strip().lower() for s in tags if s]
-									objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
-									if objs:
-										n.hashtags.add(*objs)
-							except Exception:
-								logger.exception("Attach hashtags failed (TG)")
-							logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
-							created += 1
+						img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+						logger.info("TG image fallback to permalink url=%s", img_url)
+				# Determine theme: use AI output if present else channel default else AI
+				theme_val = None
+				try:
+					t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+					if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+						theme_val = t.strip().upper()
+				except Exception:
+					theme_val = None
+				n = NewsItem.objects.create(
+					title=(rew.get("title") or orig_title)[:500],
+					original_url=url,
+					description=(rew.get("content") or orig_body)[:10000],
+					image_url=img_url,
+					published_at=published_at,
+					source_name=ch.title or ch.username,
+					theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
+				)
+				# Attach hashtags if provided and valid
+				try:
+					tags = rew.get("hashtags") if isinstance(rew, dict) else None
+					if isinstance(tags, list) and tags:
+						slugs = [str(s).strip().lower() for s in tags if s]
+						objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+						if objs:
+							n.hashtags.add(*objs)
+				except Exception:
+					logger.exception("Attach hashtags failed (TG)")
+				logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
+				created += 1
 					except IntegrityError:
 						skipped += 1
 						logger.info("TG duplicate skip url=%s", url)
@@ -528,6 +528,22 @@ def fetch_websites() -> dict:
 				if ws.desc_selector:
 					desc_el = c.select_one(ws.desc_selector)
 					desc = desc_el.get_text(strip=True) if desc_el else ''
+				# Fetch full article body from detail page
+				full_body = desc
+				try:
+					resp_detail = requests.get(link, timeout=20, headers={"User-Agent": "Mozilla/5.0 (compatible; ai-aggregator/1.0)"})
+					if resp_detail.status_code == 200:
+						from bs4 import BeautifulSoup as _BS
+						detail = _BS(resp_detail.text, 'html.parser')
+						# Heuristic: prefer article tag, else main, else body text
+						art = detail.select_one('article') or detail.select_one('main') or detail.body
+						if art:
+							full_body = art.get_text("\n", strip=True)
+							# Trim excessively long bodies
+							if full_body and len(full_body) > 12000:
+								full_body = full_body[:12000]
+				except Exception:
+					pass
 				if not link:
 					skipped += 1
 					logger.info("WEB empty link")
@@ -542,13 +558,13 @@ def fetch_websites() -> dict:
 				try:
 					with transaction.atomic():
 						try:
-							rew = rewrite_article(title or link, desc or "")
+							rew = rewrite_article(title or link, full_body or desc or "")
 						except Exception:
 							rew = None
 						if not rew:
-							rew = {"title": title or link, "content": desc or ""}
+							rew = {"title": title or link, "content": (full_body or desc or "")}
 						# Skip too-short per config
-						effective_body = (rew.get("content") or desc or "")
+						effective_body = (rew.get("content") or full_body or desc or "")
 						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
 							skipped += 1
 							continue
