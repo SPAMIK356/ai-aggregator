@@ -5,11 +5,42 @@ from django.conf import settings as dj_settings
 from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink, AdBanner
 
 
+@admin.action(description="Activate selected")
+def mark_active(modeladmin, request, queryset):
+	updated = queryset.update(is_active=True)
+	modeladmin.message_user(request, f"Activated {updated} item(s)")
+
+
+@admin.action(description="Deactivate selected")
+def mark_inactive(modeladmin, request, queryset):
+	updated = queryset.update(is_active=False)
+	modeladmin.message_user(request, f"Deactivated {updated} item(s)")
+
+
+@admin.action(description="Enable image parsing for selected")
+def enable_parse_images(modeladmin, request, queryset):
+	# Works for models that have parse_images boolean
+	if not queryset.model._meta.get_field("parse_images"):
+		return
+	updated = queryset.update(parse_images=True)
+	modeladmin.message_user(request, f"Enabled image parsing on {updated} item(s)")
+
+
+@admin.action(description="Disable image parsing for selected")
+def disable_parse_images(modeladmin, request, queryset):
+	# Works for models that have parse_images boolean
+	if not queryset.model._meta.get_field("parse_images"):
+		return
+	updated = queryset.update(parse_images=False)
+	modeladmin.message_user(request, f"Disabled image parsing on {updated} item(s)")
+
+
 @admin.register(NewsSource)
 class NewsSourceAdmin(admin.ModelAdmin):
 	list_display = ("title", "url", "is_active", "parse_images", "created_at")
 	list_filter = ("is_active", "parse_images")
 	search_fields = ("title", "url")
+	actions = (mark_active, mark_inactive, enable_parse_images, disable_parse_images)
 
 
 @admin.register(NewsItem)
@@ -47,6 +78,7 @@ class TelegramChannelAdmin(admin.ModelAdmin):
 	list_display = ("username", "title", "is_active", "parse_images", "default_theme", "last_message_id", "updated_at")
 	list_filter = ("is_active", "parse_images", "default_theme")
 	search_fields = ("username", "title")
+	actions = (mark_active, mark_inactive, enable_parse_images, disable_parse_images)
 
 
 @admin.register(WebsiteSource)
@@ -55,6 +87,7 @@ class WebsiteSourceAdmin(admin.ModelAdmin):
 	list_filter = ("is_active", "parse_images", "default_theme")
 	search_fields = ("name", "url")
 	fields = ("name", "url", "is_active", "parse_images", "default_theme", "list_selector", "title_selector", "url_selector", "desc_selector", "image_selector")
+	actions = (mark_active, mark_inactive, enable_parse_images, disable_parse_images)
 
 
 @admin.register(RewriterConfig)
@@ -67,6 +100,7 @@ class KeywordFilterAdmin(admin.ModelAdmin):
 	list_display = ("phrase", "is_active", "updated_at")
 	list_filter = ("is_active",)
 	search_fields = ("phrase",)
+	actions = (mark_active, mark_inactive)
 
 
 @admin.register(ParserConfig)
@@ -111,6 +145,7 @@ class HashtagAdmin(admin.ModelAdmin):
 	list_display = ("slug", "name", "is_active", "updated_at")
 	list_filter = ("is_active",)
 	search_fields = ("slug", "name")
+	actions = (mark_active, mark_inactive)
 
 
 @admin.register(SitePage)
@@ -126,6 +161,7 @@ class SocialLinkAdmin(admin.ModelAdmin):
 	list_filter = ("is_active",)
 	search_fields = ("name", "url")
 	readonly_fields = ("created_at", "updated_at")
+	actions = (mark_active, mark_inactive)
 
 
 @admin.register(AdBanner)
@@ -135,3 +171,4 @@ class AdBannerAdmin(admin.ModelAdmin):
 	readonly_fields = ("created_at", "updated_at")
 	search_fields = ("name", "url")
 	fields = ("name", "url", "image", "is_active", "weight", "created_at", "updated_at")
+	actions = (mark_active, mark_inactive)
