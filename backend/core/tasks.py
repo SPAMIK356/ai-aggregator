@@ -232,6 +232,18 @@ def deliver_outbox() -> dict:
 	for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
 		try:
 			ok = False
+			last_err = ""
+			# Drop legacy events without id (pre-payload schema) to avoid infinite retries
+			try:
+				if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
+					pl = event.payload or {}
+					if not pl.get("id"):
+						event.delivery_attempts += 1
+						event.mark_delivered()
+						skipped += 1
+						continue
+			except Exception:
+				pass
 			# Prefer webhook if configured
 			if webhook_url:
 				resp = requests.post(webhook_url, json={
@@ -239,6 +251,8 @@ def deliver_outbox() -> dict:
 					"payload": event.payload,
 				})
 				ok = 200 <= resp.status_code < 300
+				if not ok:
+					last_err = f"WEBHOOK HTTP {resp.status_code}"
 			# Fallback to Telegram bot
 			if (not ok) and bot_token and channel and Bot:
 				try:
@@ -289,13 +303,14 @@ def deliver_outbox() -> dict:
 						ok = True
 				except Exception as _tg_exc:
 					ok = False
+					last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
 			if ok:
 				event.delivery_attempts += 1
 				event.mark_delivered()
 				delivered += 1
 			else:
 				event.delivery_attempts += 1
-				event.last_error = (f"Webhook failed" if webhook_url else "")
+				event.last_error = last_err or ("Webhook failed" if webhook_url else "Delivery failed")
 				event.save(update_fields=["delivery_attempts", "last_error"])
 				skipped += 1
 		except Exception as exc:
