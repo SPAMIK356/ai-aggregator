@@ -63,6 +63,36 @@ def _strip_html_tags(value: str) -> str:
 	return re.sub(r"<[^>]+>", "", value)
 
 
+def _to_plain_text(value: str) -> str:
+	"""Convert HTML/Markdown-rich text into plain text for Telegram.
+
+	Removes HTML tags/blocks, markdown links/emphasis/code, and bare URLs.
+	"""
+	try:
+		if not value:
+			return ""
+		# Remove code/pre/style blocks entirely
+		text = re.sub(r"<(pre|code|style)[\s\S]*?</\\1>", " ", value, flags=re.I)
+		# Strip remaining HTML tags
+		text = _strip_html_tags(text)
+		# Markdown links: [text](url) -> text
+		text = re.sub(r"\\[([^\\]]+)\\]\\((?:https?://|www\\.)[^\\s)]+\\)", r"\\1", text)
+		# Remove emphasis/code markers: **, __, *, _, `, ```
+		text = re.sub(r"```[\s\S]*?```", " ", text)
+		text = re.sub(r"`+", "", text)
+		text = re.sub(r"\\*\\*|__|\\*|_", "", text)
+		# Remove bare URLs
+		text = re.sub(r"https?://\\S+|www\\.\\S+", "", text)
+		# Decode HTML entities and normalize whitespace
+		import html as _html
+		text = _html.unescape(text)
+		text = re.sub(r"[ \t]+", " ", text)
+		text = re.sub(r"\n{3,}", "\n\n", text)
+		return text.strip()
+	except Exception:
+		return (value or "").strip()
+
+
 def _format_telegram_html(text: str, entities) -> str:
 	"""Render a subset of Telegram entities into HTML tags.
 
@@ -290,16 +320,18 @@ def deliver_outbox() -> dict:
 						continue
 					except Exception:
 						pass
-					text = f"<b>{t}</b>\n\n{body}".strip()
+					# Send as plain text (no HTML/Markdown) so it renders cleanly in Telegram
+					text = f"{t}\n\n{body}".strip()
+					text_plain = _to_plain_text(text)
 					if img:
 						try:
-							bot.send_photo(chat_id=channel, photo=img, caption=text[:1024], parse_mode="HTML")
+							bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
 							ok = True
 						except Exception:
-							bot.send_message(chat_id=channel, text=text[:4096], parse_mode="HTML", disable_web_page_preview=True)
+							bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
 							ok = True
 					else:
-						bot.send_message(chat_id=channel, text=text[:4096], parse_mode="HTML", disable_web_page_preview=True)
+						bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
 						ok = True
 				except Exception as _tg_exc:
 					ok = False
