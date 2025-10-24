@@ -441,8 +441,8 @@ def fetch_telegram_channels() -> dict:
 							logger.exception("TG image download failed; using permalink url=%s", img_url)
 						# Final fallback if no local image was produced but message includes a photo entity
 						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
-						img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-						logger.info("TG image fallback to permalink url=%s", img_url)
+							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+							logger.info("TG image fallback to permalink url=%s", img_url)
 				# Determine theme: use AI output if present else channel default else AI
 				theme_val = None
 				try:
@@ -472,9 +472,9 @@ def fetch_telegram_channels() -> dict:
 					logger.exception("Attach hashtags failed (TG)")
 				logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
 				created += 1
-					except IntegrityError:
-						skipped += 1
-						logger.info("TG duplicate skip url=%s", url)
+			except IntegrityError:
+				skipped += 1
+				logger.info("TG duplicate skip url=%s", url)
 					max_id = max(max_id, m.id or 0)
 				if max_id and max_id != (ch.last_message_id or 0):
 					ch.last_message_id = max_id
