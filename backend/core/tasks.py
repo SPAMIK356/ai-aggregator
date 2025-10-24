@@ -443,39 +443,38 @@ def fetch_telegram_channels() -> dict:
 						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							logger.info("TG image fallback to permalink url=%s", img_url)
-				# Determine theme: use AI output if present else channel default else AI
-				theme_val = None
-				try:
-					t = (rew or {}).get("theme") if isinstance(rew, dict) else None
-					if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
-						theme_val = t.strip().upper()
-				except Exception:
-					theme_val = None
-				n = NewsItem.objects.create(
-					title=(rew.get("title") or orig_title)[:500],
-					original_url=url,
-					description=(rew.get("content") or orig_body)[:10000],
-					image_url=img_url,
-					published_at=published_at,
-					source_name=ch.title or ch.username,
-					theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
-				)
-				# Attach hashtags if provided and valid
-				try:
-					tags = rew.get("hashtags") if isinstance(rew, dict) else None
-					if isinstance(tags, list) and tags:
-						slugs = [str(s).strip().lower() for s in tags if s]
-						objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
-						if objs:
-							n.hashtags.add(*objs)
-				except Exception:
-					logger.exception("Attach hashtags failed (TG)")
-				logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
-				created += 1
-			except IntegrityError:
-				skipped += 1
-				logger.info("TG duplicate skip url=%s", url)
-					max_id = max(max_id, m.id or 0)
+						# Determine theme: use AI output if present else channel default else AI
+						theme_val = None
+						try:
+							t = (rew or {}).get("theme") if isinstance(rew, dict) else None
+							if isinstance(t, str) and t.strip().upper() in (NewsItem.Theme.AI, NewsItem.Theme.CRYPTO):
+								theme_val = t.strip().upper()
+						except Exception:
+							theme_val = None
+						n = NewsItem.objects.create(
+							title=(rew.get("title") or orig_title)[:500],
+							original_url=url,
+							description=(rew.get("content") or orig_body)[:10000],
+							image_url=img_url,
+							published_at=published_at,
+							source_name=ch.title or ch.username,
+							theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
+						)
+						# Attach hashtags if provided and valid
+						try:
+							tags = rew.get("hashtags") if isinstance(rew, dict) else None
+							if isinstance(tags, list) and tags:
+								slugs = [str(s).strip().lower() for s in tags if s]
+								objs = list(Hashtag.objects.filter(slug__in=slugs, is_active=True))
+								if objs:
+									n.hashtags.add(*objs)
+						except Exception:
+							logger.exception("Attach hashtags failed (TG)")
+						logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
+						created += 1
+					except IntegrityError:
+						skipped += 1
+						logger.info("TG duplicate skip url=%s", url)
 				if max_id and max_id != (ch.last_message_id or 0):
 					ch.last_message_id = max_id
 					ch.save(update_fields=["last_message_id", "updated_at"])
