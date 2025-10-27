@@ -127,6 +127,20 @@ class RewriterConfig(TimeStampedModel):
 		return f"Rewriter ({'on' if self.is_enabled else 'off'})"
 
 
+class TelegramRewriterConfig(TimeStampedModel):
+	"""Admin-configurable prompt for Telegram bot rewriting.
+
+	Fields mirror RewriterConfig for consistency.
+	"""
+	is_enabled = models.BooleanField(default=False)
+	model = models.CharField(max_length=64, default="gpt-4o-mini")
+	prompt = models.TextField(blank=True, help_text="System instructions for Telegram rewriting. Use placeholders like {title} {content}")
+	max_output_tokens = models.PositiveIntegerField(default=1024)
+
+	def __str__(self) -> str:
+		return f"TG Rewriter ({'on' if self.is_enabled else 'off'})"
+
+
 class WebsiteSource(TimeStampedModel):
 	"""Generic website source with CSS selectors to extract items.
 

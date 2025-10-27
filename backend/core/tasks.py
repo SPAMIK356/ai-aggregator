@@ -320,6 +320,18 @@ def deliver_outbox() -> dict:
 						continue
 					except Exception:
 						pass
+					# Optionally rewrite specifically for Telegram if enabled
+					try:
+						from .rewriter import get_active_telegram_config
+						_tg_cfg = get_active_telegram_config()
+						if _tg_cfg:
+							from .rewriter import rewrite_article as _web_rewriter
+							rew = _web_rewriter(t, body)  # reuse same robust retry logic
+							if rew and isinstance(rew, dict):
+								t = (rew.get("title") or t).strip()
+								body = (rew.get("content") or body or "").strip()
+					except Exception:
+						pass
 					# Send as plain text (no HTML/Markdown) so it renders cleanly in Telegram
 					text = f"{t}\n\n{body}".strip()
 					text_plain = _to_plain_text(text)

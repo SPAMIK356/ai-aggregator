@@ -10,7 +10,7 @@ from django.conf import settings
 from openai import OpenAI
 from openai import BadRequestError, APITimeoutError, RateLimitError
 
-from .models import RewriterConfig, Hashtag
+from .models import RewriterConfig, TelegramRewriterConfig, Hashtag
 
 
 def get_active_config() -> Optional[RewriterConfig]:
@@ -20,6 +20,16 @@ def get_active_config() -> Optional[RewriterConfig]:
         return None
     cfg = RewriterConfig.objects.order_by("-updated_at").first()
     return cfg if cfg and cfg.is_enabled else None
+
+
+def get_active_telegram_config() -> Optional[TelegramRewriterConfig]:
+	"""Separate toggle/prompt for Telegram bot rewriting."""
+	from django.conf import settings as dj_settings
+	# Respect global kill switch
+	if not getattr(dj_settings, "REWRITER_ENABLED", False):
+		return None
+	cfg = TelegramRewriterConfig.objects.order_by("-updated_at").first()
+	return cfg if cfg and cfg.is_enabled else None
 
 
 def _lenient_json_parse(text: str) -> Optional[Dict[str, str]]:
