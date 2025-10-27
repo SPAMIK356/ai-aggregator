@@ -738,18 +738,26 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 						local_path = n.image_file.path  # type: ignore[attr-defined]
 			except Exception:
 				local_path = ""
-			# If URL is relative, try map to MEDIA_ROOT
+			# If URL is relative, map to MEDIA_ROOT correctly (strip MEDIA_URL prefix if present)
 			if not local_path and img:
 				try:
 					from urllib.parse import urlparse
 					p = urlparse(img)
 					if not p.scheme:
-						candidate = (media_root / img.lstrip("/"))
-						if candidate.exists():
+						media_url_prefix = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
+						candidate = None
+						if img.startswith(media_url_prefix):
+							rel = img[len(media_url_prefix):].lstrip("/")
+							candidate = media_root / rel
+						elif img.startswith("/"):
+							candidate = media_root / img.lstrip("/")
+						else:
+							candidate = media_root / img
+						if candidate and candidate.exists():
 							local_path = str(candidate)
 				except Exception:
 					pass
-			# Build absolute URL if relative and PUBLIC_BASE_URL provided
+			# Build absolute URL only if PUBLIC_BASE_URL provided; otherwise keep relative so we try local mapping or file upload
 			try:
 				base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
 				if img and img.startswith("/") and base:
