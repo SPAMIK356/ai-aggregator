@@ -730,19 +730,42 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 			body = (n.description or "").strip()
 			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
 			img = (n.image_url or "").strip()
-			if not img and getattr(n, "image_file", None):
+			# Resolve local file path if available
+			local_path = ""
+			try:
+				if getattr(n, "image_file", None) and getattr(n.image_file, "path", ""):
+					if os.path.exists(n.image_file.path):  # type: ignore[attr-defined]
+						local_path = n.image_file.path  # type: ignore[attr-defined]
+			except Exception:
+				local_path = ""
+			# If URL is relative, try map to MEDIA_ROOT
+			if not local_path and img:
 				try:
-					img = n.image_file.url  # type: ignore[attr-defined]
+					from urllib.parse import urlparse
+					p = urlparse(img)
+					if not p.scheme:
+						candidate = (media_root / img.lstrip("/"))
+						if candidate.exists():
+							local_path = str(candidate)
 				except Exception:
-					img = ""
-			# If we have a relative media path and a public base URL, make it absolute
+					pass
+			# Build absolute URL if relative and PUBLIC_BASE_URL provided
 			try:
 				base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
 				if img and img.startswith("/") and base:
 					img = base.rstrip("/") + img
 			except Exception:
 				pass
-			if img:
+			# Prefer uploading local file when available, else send by URL, else text
+			if local_path:
+				try:
+					with open(local_path, "rb") as f:
+						bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+					posted += 1
+				except Exception:
+					bot.send_message(chat_id=channel, text=text_plain)
+					posted += 1
+			elif img:
 				try:
 					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
 					posted += 1
