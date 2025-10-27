@@ -759,16 +759,19 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 			# Prefer uploading local file when available, else try downloading remote to temp, else send by URL, else text
 			if local_path:
 				try:
+					logger.info("TG poll: sending local image path=%s id=%d", local_path, n.id)
 					with open(local_path, "rb") as f:
 						bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
 					posted += 1
 				except Exception:
+					logger.exception("TG poll: local image send failed id=%d", n.id)
 					bot.send_message(chat_id=channel, text=text_plain)
 					posted += 1
 			elif img:
 				# Try downloading the remote image so Telegram receives a clean file upload
 				try:
-					resp = requests.get(img, timeout=15)
+					logger.info("TG poll: trying remote download url=%s id=%d", img, n.id)
+					resp = requests.get(img, timeout=20, headers={"User-Agent": "Mozilla/5.0 (compatible; ai-aggregator/1.0)"})
 					if resp.status_code == 200 and resp.content:
 						import tempfile
 						with tempfile.NamedTemporaryFile(suffix=".jpg") as tf:
@@ -780,11 +783,13 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 								new_last = max(new_last, n.id)
 								continue
 				except Exception:
-					pass
+						logger.exception("TG poll: remote download/send failed url=%s id=%d", img, n.id)
 				try:
+					logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
 					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
 					posted += 1
 				except Exception:
+					logger.exception("TG poll: URL photo send failed url=%s id=%d", img, n.id)
 					bot.send_message(chat_id=channel, text=text_plain)
 					posted += 1
 			else:
