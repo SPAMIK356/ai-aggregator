@@ -756,7 +756,7 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 					img = base.rstrip("/") + img
 			except Exception:
 				pass
-			# Prefer uploading local file when available, else send by URL, else text
+			# Prefer uploading local file when available, else try downloading remote to temp, else send by URL, else text
 			if local_path:
 				try:
 					with open(local_path, "rb") as f:
@@ -766,6 +766,21 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 					bot.send_message(chat_id=channel, text=text_plain)
 					posted += 1
 			elif img:
+				# Try downloading the remote image so Telegram receives a clean file upload
+				try:
+					resp = requests.get(img, timeout=15)
+					if resp.status_code == 200 and resp.content:
+						import tempfile
+						with tempfile.NamedTemporaryFile(suffix=".jpg") as tf:
+							tf.write(resp.content)
+							tf.flush()
+							with open(tf.name, "rb") as f:
+								bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+								posted += 1
+								new_last = max(new_last, n.id)
+								continue
+				except Exception:
+					pass
 				try:
 					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
 					posted += 1
