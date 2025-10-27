@@ -19,6 +19,11 @@ app.conf.beat_schedule = {
 		"task": "core.tasks.deliver_outbox",
 		"schedule": crontab(minute="*"),
 	},
+	"poll-and-post-latest-every-2-min": {
+		"task": "core.tasks.poll_and_post_latest_news",
+		"schedule": crontab(minute="*/2"),
+		"options": {"queue": "default"},
+	},
 	"fetch-telegram-every-5-min": {
 		"task": "core.tasks.fetch_telegram_channels",
 		"schedule": crontab(minute="*/5"),

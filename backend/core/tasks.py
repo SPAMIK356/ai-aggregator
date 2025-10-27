@@ -677,3 +677,59 @@ def fetch_websites() -> dict:
 	return {"created": created, "skipped": skipped}
 
 
+@shared_task
+def poll_and_post_latest_news(limit: int = 10) -> dict:
+	"""Every run, read last posted NewsItem ID from a file, pull new items, and post to Telegram.
+
+	Uses plain text, no HTML, and posts photos if URLs are present.
+	"""
+	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
+	channel = getattr(settings, "TELEGRAM_CHANNEL", "")
+	if not (bot_token and channel and Bot):
+		return {"posted": 0, "skipped": 0, "reason": "no telegram configured"}
+
+	media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+	state_dir = media_root / "state"
+	state_dir.mkdir(parents=True, exist_ok=True)
+	state_file = state_dir / "tg_last_posted_id.txt"
+	last_id = 0
+	try:
+		if state_file.exists():
+			last_id = int(state_file.read_text().strip() or "0")
+	except Exception:
+		last_id = 0
+
+	qs = NewsItem.objects.order_by("id").filter(id__gt=last_id)[:max(1, int(limit))]
+	posted = 0
+	skipped = 0
+	if not qs:
+		return {"posted": 0, "skipped": 0, "last_id": last_id}
+	bot = Bot(token=bot_token)
+	new_last = last_id
+	for n in qs:
+		try:
+			title = (n.title or "New post").strip()
+			body = (n.description or "").strip()
+			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
+			img = (n.image_url or "").strip()
+			if img:
+				try:
+					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
+					posted += 1
+				except Exception:
+					bot.send_message(chat_id=channel, text=text_plain)
+					posted += 1
+			else:
+				bot.send_message(chat_id=channel, text=text_plain)
+				posted += 1
+			new_last = max(new_last, n.id)
+		except Exception:
+			skipped += 1
+	try:
+		if new_last > last_id:
+			state_file.write_text(str(new_last))
+	except Exception:
+		pass
+	return {"posted": posted, "skipped": skipped, "last_id": new_last}
+
+
