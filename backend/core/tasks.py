@@ -692,12 +692,30 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 	state_dir = media_root / "state"
 	state_dir.mkdir(parents=True, exist_ok=True)
 	state_file = state_dir / "tg_last_posted_id.txt"
+	# Determine current max id in DB to seed checkpoint on first run
+	try:
+		current_max_id = int(NewsItem.objects.order_by("-id").values_list("id", flat=True).first() or 0)
+	except Exception:
+		current_max_id = 0
+
 	last_id = 0
+	seeded = False
 	try:
 		if state_file.exists():
-			last_id = int(state_file.read_text().strip() or "0")
+			val = (state_file.read_text() or "").strip()
+			last_id = int(val) if val else 0
+		else:
+			# Seed: start from current max id so we only post new content going forward
+			state_file.write_text(str(current_max_id))
+			return {"posted": 0, "skipped": 0, "last_id": current_max_id, "seeded": True}
 	except Exception:
-		last_id = 0
+		# If parsing checkpoint failed, reset to current max id to avoid posting old backlog
+		last_id = current_max_id
+		try:
+			state_file.write_text(str(current_max_id))
+		except Exception:
+			pass
+		return {"posted": 0, "skipped": 0, "last_id": current_max_id, "seeded": True}
 
 	qs = NewsItem.objects.order_by("id").filter(id__gt=last_id)[:max(1, int(limit))]
 	posted = 0
