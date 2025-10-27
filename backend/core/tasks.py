@@ -730,6 +730,18 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 			body = (n.description or "").strip()
 			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
 			img = (n.image_url or "").strip()
+			if not img and getattr(n, "image_file", None):
+				try:
+					img = n.image_file.url  # type: ignore[attr-defined]
+				except Exception:
+					img = ""
+			# If we have a relative media path and a public base URL, make it absolute
+			try:
+				base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
+				if img and img.startswith("/") and base:
+					img = base.rstrip("/") + img
+			except Exception:
+				pass
 			if img:
 				try:
 					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
