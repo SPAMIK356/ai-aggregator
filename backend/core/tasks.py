@@ -698,6 +698,7 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
 	channel = getattr(settings, "TELEGRAM_CHANNEL", "")
 	if not (bot_token and channel and Bot):
+		logger.info("TG poll: no telegram configured; skip")
 		return {"posted": 0, "skipped": 0, "reason": "no telegram configured"}
 
 	media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
@@ -733,6 +734,7 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 	posted = 0
 	skipped = 0
 	if not qs:
+		logger.info("TG poll: no new items last_id=%d", last_id)
 		return {"posted": 0, "skipped": 0, "last_id": last_id}
 	bot = Bot(token=bot_token)
 	new_last = last_id
@@ -823,6 +825,7 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 			state_file.write_text(str(new_last))
 	except Exception:
 		pass
+	logger.info("TG poll: done posted=%d skipped=%d last_id=%d", posted, skipped, new_last)
 	return {"posted": posted, "skipped": skipped, "last_id": new_last}
 
 
