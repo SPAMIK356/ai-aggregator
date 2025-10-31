@@ -167,3 +167,115 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 	return None
 
 
+def rewrite_article_tg(title: str, content: str) -> Optional[Dict[str, object]]:
+	"""Telegram-specific rewriter using TelegramRewriterConfig settings.
+
+	Mirrors rewrite_article() behavior but sources model/prompt from TelegramRewriterConfig.
+	"""
+	cfg = get_active_telegram_config()
+	if not cfg:
+		return None
+	api_key = getattr(settings, "OPENAI_API_KEY", None)
+	if not api_key:
+		return None
+
+	base_url = getattr(settings, "OPENAI_BASE_URL", None)
+	base_timeout = float(getattr(settings, "REWRITER_TIMEOUT", 30.0))
+	max_timeout = float(getattr(settings, "REWRITER_MAX_TIMEOUT", 90.0))
+	attempts = int(getattr(settings, "REWRITER_ATTEMPTS", 6))
+	backoff = float(getattr(settings, "REWRITER_BACKOFF_SECONDS", 5.0))
+	logger = logging.getLogger(__name__)
+
+	system_prompt = cfg.prompt or (
+		"You rewrite and clean AI/crypto articles into concise Russian. Return json with keys 'title', 'content', 'hashtags' (array of slugs), and 'theme'. 'theme' MUST be one of: AI or CRYPTO. Hashtags must be chosen ONLY from the allowed set provided."
+	)
+	if "json" not in system_prompt.lower():
+		system_prompt = system_prompt.strip() + " Return json object with keys 'title' and 'content'."
+	allowed = list(Hashtag.objects.filter(is_active=True).values_list("slug", flat=True))
+	user_payload = {
+		"title": title,
+		"content": content,
+		"allowed_hashtags": allowed,
+		"allowed_themes": ["AI", "CRYPTO"],
+	}
+
+	last_err: Optional[Exception] = None
+	for i in range(attempts):
+		attempt_timeout = min(base_timeout * (2 ** i), max_timeout)
+		client = OpenAI(api_key=api_key, timeout=attempt_timeout, max_retries=0, base_url=base_url)
+		try:
+			response = client.chat.completions.create(
+				model=cfg.model,
+				messages=[
+					{"role": "system", "content": system_prompt},
+					{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+				],
+				response_format={"type": "json_object"},
+			)
+			text = response.choices[0].message.content or "{}"
+			data = _lenient_json_parse(text) or {}
+			out: Dict[str, object] = {"title": data.get("title") or title, "content": data.get("content") or content}
+			if isinstance(data.get("hashtags"), list):
+				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+			theme_val = str(data.get("theme") or "").strip().upper()
+			if theme_val in ("AI", "CRYPTO"):
+				out["theme"] = theme_val
+			return out
+		except BadRequestError as e:
+			msg = str(e)
+			logger.warning("TG Rewriter BadRequest on model=%s: %s", cfg.model, msg)
+			fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
+			if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
+				try:
+					response = client.chat.completions.create(
+						model=fallback_model,
+						messages=[
+							{"role": "system", "content": system_prompt},
+							{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+						],
+						response_format={"type": "json_object"},
+					)
+					text = response.choices[0].message.content or "{}"
+					data = _lenient_json_parse(text) or {}
+					out = {"title": data.get("title") or title, "content": data.get("content") or content}
+					if isinstance(data.get("hashtags"), list):
+						out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+					theme_val = str(data.get("theme") or "").strip().upper()
+					if theme_val in ("AI", "CRYPTO"):
+						out["theme"] = theme_val
+					return out
+				except Exception as e2:
+					last_err = e2
+					logger.warning("TG Rewriter fallback model failed: %s", e2)
+			try:
+				response = client.chat.completions.create(
+					model=cfg.model,
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+					],
+				)
+			text = response.choices[0].message.content or "{}"
+			data = _lenient_json_parse(text) or {}
+			out = {"title": data.get("title") or title, "content": data.get("content") or content}
+			if isinstance(data.get("hashtags"), list):
+				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+			theme_val = str(data.get("theme") or "").strip().upper()
+			if theme_val in ("AI", "CRYPTO"):
+				out["theme"] = theme_val
+			return out
+		except Exception as e3:
+			last_err = e3
+	except (APITimeoutError, RateLimitError) as e:
+		last_err = e
+		logger.warning("TG Rewriter transient error (attempt %s/%s, timeout=%ss): %s", i+1, attempts, int(attempt_timeout), e)
+	except Exception as e:
+		last_err = e
+		logger.exception("TG Rewriter unexpected error: %s", e)
+	if i < attempts - 1:
+		time.sleep(backoff * (2 ** i))
+
+	logger.error("TG Rewriter failed after %s attempts: %s", attempts, last_err)
+	return None
+
+

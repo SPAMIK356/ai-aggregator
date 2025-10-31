@@ -322,11 +322,10 @@ def deliver_outbox() -> dict:
 						pass
 					# Optionally rewrite specifically for Telegram if enabled
 					try:
-						from .rewriter import get_active_telegram_config
+						from .rewriter import get_active_telegram_config, rewrite_article_tg
 						_tg_cfg = get_active_telegram_config()
 						if _tg_cfg:
-							from .rewriter import rewrite_article as _web_rewriter
-							rew = _web_rewriter(t, body)  # reuse same robust retry logic
+							rew = rewrite_article_tg(t, body)
 							if rew and isinstance(rew, dict):
 								t = (rew.get("title") or t).strip()
 								body = (rew.get("content") or body or "").strip()
@@ -742,6 +741,17 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 		try:
 			title = (n.title or "New post").strip()
 			body = (n.description or "").strip()
+			# TG-specific rewrite if enabled
+			try:
+				from .rewriter import get_active_telegram_config, rewrite_article_tg
+				_tg_cfg = get_active_telegram_config()
+				if _tg_cfg:
+					rew = rewrite_article_tg(title, body)
+					if rew and isinstance(rew, dict):
+						title = (rew.get("title") or title).strip()
+						body = (rew.get("content") or body or "").strip()
+			except Exception:
+				pass
 			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
 			img = (n.image_url or "").strip()
 			# Resolve local file path if available
