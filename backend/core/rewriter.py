@@ -266,14 +266,14 @@ def rewrite_article_tg(title: str, content: str) -> Optional[Dict[str, object]]:
 				return out
 			except Exception as e3:
 				last_err = e3
-	except (APITimeoutError, RateLimitError) as e:
-		last_err = e
-		logger.warning("TG Rewriter transient error (attempt %s/%s, timeout=%ss): %s", i+1, attempts, int(attempt_timeout), e)
-	except Exception as e:
-		last_err = e
-		logger.exception("TG Rewriter unexpected error: %s", e)
-	if i < attempts - 1:
-		time.sleep(backoff * (2 ** i))
+		except (APITimeoutError, RateLimitError) as e:
+			last_err = e
+			logger.warning("TG Rewriter transient error (attempt %s/%s, timeout=%ss): %s", i+1, attempts, int(attempt_timeout), e)
+		except Exception as e:
+			last_err = e
+			logger.exception("TG Rewriter unexpected error: %s", e)
+		if i < attempts - 1:
+			time.sleep(backoff * (2 ** i))
 
 	logger.error("TG Rewriter failed after %s attempts: %s", attempts, last_err)
 	return None
