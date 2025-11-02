@@ -23,9 +23,10 @@ from html import escape
 from .rewriter import rewrite_article
 import json
 try:
-	from telegram import Bot
+	from telegram import Bot, ParseMode
 except Exception:
 	Bot = None
+	ParseMode = None
 logger = get_task_logger(__name__)
 
 try:
@@ -91,6 +92,69 @@ def _to_plain_text(value: str) -> str:
 		return text.strip()
 	except Exception:
 		return (value or "").strip()
+
+
+def _to_telegram_html(value: str) -> str:
+	"""Sanitize to Telegram HTML subset: allow <b>, <i>, <u>, <s>, <code>, <pre>, <a>.
+
+	- Drops scripts/styles and unsupported tags
+	- Normalizes synonyms (strong->b, em->i, ins->u, del/strike->s)
+	- Keeps only href on <a> and only http/https links
+	- Converts block tags to newlines
+	"""
+	try:
+		if not value:
+			return ""
+		allowed = {"b", "i", "u", "s", "code", "pre", "a", "br"}
+		block_newline = {"p", "div", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote"}
+		soup = BeautifulSoup(value, "html.parser")
+		# Remove dangerous blocks
+		for t in soup.find_all(["script", "style"]):
+			t.decompose()
+		# Normalize synonyms first
+		for tag in soup.find_all(True):
+			name = tag.name.lower()
+			if name == "strong":
+				tag.name = "b"
+			elif name == "em":
+				tag.name = "i"
+			elif name == "ins":
+				tag.name = "u"
+			elif name in ("del", "strike"):
+				tag.name = "s"
+		# Convert block tags to newline boundaries and unwrap
+		for tag in list(soup.find_all(block_newline)):
+			tag.insert_before("\n")
+			tag.insert_after("\n")
+			tag.unwrap()
+		# Clean all tags, keeping only the allowed subset and safe attributes
+		for tag in soup.find_all(True):
+			name = tag.name.lower()
+			if name == "a":
+				href = tag.get("href", "")
+				if not href.startswith("http://") and not href.startswith("https://"):
+					# Drop unsafe links
+					tag.unwrap()
+					continue
+				# Keep only href
+				for attr in list(tag.attrs.keys()):
+					if attr != "href":
+						del tag.attrs[attr]
+			elif name in allowed:
+				# Allowed tag, drop all attributes
+				for attr in list(tag.attrs.keys()):
+					del tag.attrs[attr]
+			else:
+				# Replace unsupported tags with their text
+				tag.unwrap()
+		# Build cleaned HTML string
+		html = "".join(str(c) for c in soup.contents)
+		# Normalize multiple newlines
+		html = re.sub(r"\n{3,}", "\n\n", html)
+		return html.strip()
+	except Exception:
+		# Fallback to plain text if sanitization fails
+		return _to_plain_text(value)
 
 
 def _format_telegram_html(text: str, entities) -> str:
@@ -331,19 +395,36 @@ def deliver_outbox() -> dict:
 								body = (rew.get("content") or body or "").strip()
 					except Exception:
 						pass
-					# Send as plain text (no HTML/Markdown) so it renders cleanly in Telegram
+					# Prefer Telegram HTML formatting with safe subset; fallback to plain text
 					text = f"{t}\n\n{body}".strip()
+					text_html = _to_telegram_html(text)
 					text_plain = _to_plain_text(text)
 					if img:
 						try:
-							bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
+							ok = True
+						except Exception:
+							# Fallback to photo+plain caption; if that fails, try message HTML, then plain
+							try:
+								bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
+								ok = True
+							except Exception:
+								try:
+									pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+									bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
+									ok = True
+								except Exception:
+									bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
+									ok = True
+					else:
+						try:
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
 							ok = True
 						except Exception:
 							bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
 							ok = True
-					else:
-						bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-						ok = True
 				except Exception as _tg_exc:
 					ok = False
 					last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
@@ -752,6 +833,7 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 						body = (rew.get("content") or body or "").strip()
 			except Exception:
 				pass
+			text_html = _to_telegram_html(f"{title}\n\n{body}")[:4096]
 			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
 			img = (n.image_url or "").strip()
 			# Resolve local file path if available
@@ -793,12 +875,24 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 				try:
 					logger.info("TG poll: sending local image path=%s id=%d", local_path, n.id)
 					with open(local_path, "rb") as f:
-						bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
 					posted += 1
 				except Exception:
 					logger.exception("TG poll: local image send failed id=%d", n.id)
-					bot.send_message(chat_id=channel, text=text_plain)
-					posted += 1
+					# Fallbacks
+					try:
+						with open(local_path, "rb") as f:
+							bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+						posted += 1
+					except Exception:
+						try:
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							bot.send_message(chat_id=channel, text=text_html)
+							posted += 1
+						except Exception:
+							bot.send_message(chat_id=channel, text=text_plain)
+							posted += 1
 			elif img:
 				# Try downloading the remote image so Telegram receives a clean file upload
 				try:
@@ -810,23 +904,36 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 							tf.write(resp.content)
 							tf.flush()
 							with open(tf.name, "rb") as f:
-								bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+								pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+								bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
 								posted += 1
 								new_last = max(new_last, n.id)
 								continue
 				except Exception:
 						logger.exception("TG poll: remote download/send failed url=%s id=%d", img, n.id)
 				try:
-					logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
-					bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
+						logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
+						pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+						bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
 					posted += 1
 				except Exception:
 					logger.exception("TG poll: URL photo send failed url=%s id=%d", img, n.id)
-					bot.send_message(chat_id=channel, text=text_plain)
-					posted += 1
+						# Fallback message: try HTML then plain
+						try:
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
+							posted += 1
+						except Exception:
+							bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
+							posted += 1
 			else:
-				bot.send_message(chat_id=channel, text=text_plain)
-				posted += 1
+				try:
+					pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+					bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
+					posted += 1
+				except Exception:
+					bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
+					posted += 1
 			new_last = max(new_last, n.id)
 		except Exception:
 			skipped += 1
