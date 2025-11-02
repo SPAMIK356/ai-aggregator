@@ -255,17 +255,17 @@ def rewrite_article_tg(title: str, content: str) -> Optional[Dict[str, object]]:
 						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
 					],
 				)
-			text = response.choices[0].message.content or "{}"
-			data = _lenient_json_parse(text) or {}
-			out = {"title": data.get("title") or title, "content": data.get("content") or content}
-			if isinstance(data.get("hashtags"), list):
-				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
-			theme_val = str(data.get("theme") or "").strip().upper()
-			if theme_val in ("AI", "CRYPTO"):
-				out["theme"] = theme_val
-			return out
-		except Exception as e3:
-			last_err = e3
+				text = response.choices[0].message.content or "{}"
+				data = _lenient_json_parse(text) or {}
+				out = {"title": data.get("title") or title, "content": data.get("content") or content}
+				if isinstance(data.get("hashtags"), list):
+					out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
+				theme_val = str(data.get("theme") or "").strip().upper()
+				if theme_val in ("AI", "CRYPTO"):
+					out["theme"] = theme_val
+				return out
+			except Exception as e3:
+				last_err = e3
 	except (APITimeoutError, RateLimitError) as e:
 		last_err = e
 		logger.warning("TG Rewriter transient error (attempt %s/%s, timeout=%ss): %s", i+1, attempts, int(attempt_timeout), e)
