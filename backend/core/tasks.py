@@ -909,23 +909,23 @@ def poll_and_post_latest_news(limit: int = 10) -> dict:
 								posted += 1
 								new_last = max(new_last, n.id)
 								continue
-			except Exception:
-				logger.exception("TG poll: remote download/send failed url=%s id=%d", img, n.id)
-			try:
-				logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
-				pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-				bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
-				posted += 1
-			except Exception:
-				logger.exception("TG poll: URL photo send failed url=%s id=%d", img, n.id)
-				# Fallback message: try HTML then plain
+				except Exception:
+					logger.exception("TG poll: remote download/send failed url=%s id=%d", img, n.id)
 				try:
+					logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
 					pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-					bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
+					bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
 					posted += 1
 				except Exception:
-					bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
-					posted += 1
+					logger.exception("TG poll: URL photo send failed url=%s id=%d", img, n.id)
+					# Fallback message: try HTML then plain
+					try:
+						pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+						bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
+						posted += 1
+					except Exception:
+						bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
+						posted += 1
 			else:
 				try:
 					pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
