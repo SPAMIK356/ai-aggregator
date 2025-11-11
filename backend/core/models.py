@@ -67,7 +67,7 @@ class Hashtag(TimeStampedModel):
 	- slug: unique, lowercase stable identifier (e.g. "ai", "crypto")
 	- name: display label (e.g. "ИИ", "Крипта")
 	"""
-	slug = models.SlugField(max_length=64, unique=True)
+	slug = models.SlugField(max_length=64)
 	name = models.CharField(max_length=128)
 	is_active = models.BooleanField(default=True)
 
