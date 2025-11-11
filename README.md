@@ -1,41 +1,41 @@
-# AI‑Aggregator (MVP)
+# AI Aggregator (MVP)
 
-Минимально жизнеспособная контент‑платформа на тему ИИ:
-- Лента новостей (автоматический парсинг из источников RSS/Atom)
-- Авторские колонки (ручные публикации через админку)
-- Событийный «хук» для интеграции Telegram‑бота (outbox + webhook)
+Minimal, production-leaning content platform focused on AI/Crypto news:
+- News feed (automatic parsing from RSS/Atom and HTML websites)
+- Author columns (manual posts via Django Admin)
+- Telegram bot that periodically posts website news to a channel (images, full text, HTML formatting, optional AI rewriter)
 
-## Технологии
+### Tech Stack
 - Backend: Django 5 + DRF, Celery, PostgreSQL/SQLite, Redis
 - Frontend: Next.js 14 (App Router), React 18
-- Оркестрация: Docker Compose (опционально для прод)
+- Orchestration: Docker Compose (prod-friendly)
 
-## Структура
+### Repository Layout
 ```
 news aggregator/
   backend/
-    ai_aggregator/                # настройки Django + Celery
-    core/                         # модели, admin, API, сигналы, таски
+    ai_aggregator/                # Django + Celery settings
+    core/                         # models, admin, API, signals, tasks
     manage.py
     requirements.txt
   frontend/
-    app/                          # страницы: /, /news, /columns, /contact
+    app/                          # pages: /, /news, /columns, /contact
     package.json
     next.config.js
   docker-compose.yml              # postgres, redis, backend, worker, beat
 ```
 
-## Быстрый старт (локально, без Docker)
-Требования: Python 3.11/3.12, Node.js 18+ и npm, Windows PowerShell.
+## Quick Start (local, without Docker)
+Requirements: Python 3.11/3.12, Node.js 18+, npm, Windows PowerShell.
 
-1) Установка зависимостей Python
+1) Python dependencies
 ```powershell
 cd "D:\Projects\news aggregator"
 py -m venv .venv
 & ".venv\Scripts\python.exe" -m pip install -r "news aggregator\backend\requirements.txt"
 ```
 
-2) Миграции и демо‑данные (админ + источники RSS + разовый парсинг)
+2) Migrations and bootstrap (admin + demo sources + one-time parsing)
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" "news aggregator\backend\manage.py" migrate
@@ -43,52 +43,72 @@ $env:USE_SQLITE = "1"
   --admin-email admin@example.com --admin-username admin --admin-password admin12345
 ```
 
-3) Запуск backend
+3) Run backend
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" "news aggregator\backend\manage.py" runserver 0.0.0.0:8000
 ```
 
-4) Запуск frontend (в другом терминале)
+4) Run frontend (in another terminal)
 ```powershell
 cd "D:\Projects\news aggregator\news aggregator\frontend"
 npm install
 npm run dev
 ```
 
-Сервисы:
-- Сайт: http://localhost:3000
+Services:
+- Site: http://localhost:3000
 - API: http://localhost:8000/api
-- Админка: http://localhost:8000/admin (логин: admin, пароль: admin12345)
+- Admin: http://localhost:8000/admin (login: admin / password: admin12345)
 
-## Запуск через Docker Compose (опционально)
-Требуется Docker + Docker Compose.
-```bash
+## Run with Docker Compose
+Requires Docker Desktop.
+```powershell
 cd "D:/Projects/news aggregator"
 docker compose up -d --build
 ```
-Поднимутся:
+This brings up:
 - postgres:5432
 - redis:6379
-- backend (gunicorn) на 8000
+- backend (gunicorn) on 8000
 - worker (celery)
 - beat (celery beat)
 
-Переменные окружения можно переопределять через `docker-compose.yml`.
+Run initial Django commands:
+```powershell
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py collectstatic --noinput
+docker compose exec backend python manage.py createsuperuser
+```
+
+Environment can be overridden via `.env` and `docker-compose.yml`.
 
 ## API
-- GET `/api/news/?page=1` — новости (пагинация)
-- GET `/api/columns/?page=1` — авторские колонки (пагинация)
-- GET `/api/columns/:id/` — колонка целиком
+- GET `/api/news/?page=1` — news list (paginated)
+- GET `/api/columns/?page=1` — columns list (paginated)
+- GET `/api/columns/:id/` — column details
 
-Пагинация DRF: `results`, `next`, `previous`, `count`.
+DRF pagination keys: `results`, `next`, `previous`, `count`.
 
-## Парсер (Aggregator)
-- Планировщик: Celery beat (каждый час)
-- Источники: `/admin/core/newssource/`
-- Дедупликация: `original_url` уникален
+## Parsers
+### RSS/Atom
+- Managed in Admin: `/admin/core/newssource/`
+- Deduplication by `original_url`
+- Periodic task: `run_parser` (scheduled)
 
-Ручной запуск без Celery:
+### HTML Websites
+Parse by CSS selectors; results go to the same `NewsItem` feed.
+
+Admin: `/admin/core/websitesource/` fields
+- `name` — source display name
+- `url` — root page with article list
+- `list_selector` — article container (e.g., `.post`)
+- `title_selector` — title inside container (e.g., `.post-title`)
+- `url_selector` — link selector (e.g., `.post-title a`)
+- `desc_selector` — optional short description selector (e.g., `.excerpt`)
+- `is_active` — enable source
+
+Manual run:
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" - << 'PY'
@@ -96,30 +116,33 @@ import os
 os.environ['DJANGO_SETTINGS_MODULE']='ai_aggregator.settings'
 os.environ['USE_SQLITE']='1'
 import django; django.setup()
-from core.tasks import run_parser
-print(run_parser())
+from core.tasks import fetch_websites
+print(fetch_websites())
 PY
 ```
 
-### Telegram‑каналы
-1) Получите API‑ключи Telegram: `https://my.telegram.org` (App api_id/api_hash)
-2) Сгенерируйте `TG_STRING_SESSION`:
+Scheduled: Celery beat runs `fetch_websites` every 15 minutes.
+
+### Telegram Channels (ingest via Telethon)
+If you also ingest from Telegram channels (optional):
+1) Create Telegram API app at `https://my.telegram.org` (get `api_id`/`api_hash`).
+2) Generate `TG_STRING_SESSION`:
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" "news aggregator\backend\manage.py" generate_tg_string_session
 ```
-3) Установите переменные окружения:
+3) Set environment variables:
 ```powershell
 $env:TG_API_ID = "123456"
 $env:TG_API_HASH = "your_hash"
-$env:TG_STRING_SESSION = "1A..."  # из шага 2
+$env:TG_STRING_SESSION = "1A..."  # from step 2
 ```
-4) Добавьте каналы:
+4) Add channels:
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" "news aggregator\backend\manage.py" add_tg_channels --channels "@openai,@telegram"
 ```
-5) Запуск сбора постов вручную:
+5) Manual fetch:
 ```powershell
 $env:USE_SQLITE = "1"
 & ".venv\Scripts\python.exe" - << 'PY'
@@ -134,70 +157,80 @@ from core.tasks import fetch_telegram_channels
 print(fetch_telegram_channels())
 PY
 ```
-В Docker‑режиме заполните переменные в `docker-compose.yml` и запустите `worker` и `beat`.
 
-### Парсер веб‑сайтов (HTML)
-Можно парсить сайты при помощи CSS‑селекторов, результат публикуется в ту же ленту новостей (`NewsItem`).
+## Telegram Bot (posting to a channel)
+The bot periodically posts latest website news to your Telegram channel.
 
-1) Добавьте источник в админке `/admin/core/websitesource/`:
-   - `name`: имя источника (отображается как `source_name`)
-   - `url`: корневая страница со списком статей
-   - `list_selector`: селектор контейнера статьи (например, `.post`)
-   - `title_selector`: селектор заголовка внутри контейнера (например, `.post-title`)
-   - `url_selector`: селектор ссылки внутри контейнера (например, `.post-title a`)
-   - `desc_selector` (необязательно): селектор краткого описания (например, `.excerpt`)
-   - `is_active`: включить источник
+Key behavior:
+- Posts full text (title + body), without the original source link
+- Skips items originating from Telegram (only website-originated news)
+- Sends images when available: prefers local files, then downloads remote URLs to upload, and finally falls back to sending the URL
+- Formats text using Telegram HTML subset (`parse_mode=HTML`) with `_to_telegram_html`; falls back to plain text if needed
+- Checkpointing: uses a `tg_last_posted_id.txt` file to avoid reposting and seeds from current max id to avoid obsolete news on first run
 
-2) Запуск вручную:
-```powershell
-$env:USE_SQLITE = "1"
-& ".venv\Scripts\python.exe" - << 'PY'
-import os
-os.environ['DJANGO_SETTINGS_MODULE']='ai_aggregator.settings'
-os.environ['USE_SQLITE']='1'
-import django; django.setup()
-from core.tasks import fetch_websites
-print(fetch_websites())
-PY
-```
+Environment:
+- `TELEGRAM_BOT_TOKEN` — BotFather token
+- `TELEGRAM_CHANNEL` — `@channel_username` or numeric `-100...` id (bot must be an admin)
 
-3) Автоматически: Celery beat выполняет задачу `fetch_websites` каждые 15 минут.
+Celery tasks involved:
+- `poll_and_post_latest_news` — polls latest website news every 2 minutes and posts to Telegram
+- `deliver_outbox` — used for outbox/webhook integration (not required for the periodic bot)
 
-## Интеграция событий (hook для Telegram‑бота)
-Сигналы создают записи `OutboxEvent` при добавлении контента:
-- `news.created` (для `NewsItem`)
-- `column.created` (для `AuthorColumn`)
+Celery Beat schedule:
+- `poll_and_post_latest_news` is scheduled every 2 minutes and routed to `default` queue
 
-Celery‑таск `deliver_outbox` отправляет POST на `WEBHOOK_URL`:
-```json
-{
-  "event_type": "news.created",
-  "payload": {"post_type": "news", "title": "...", "link": "https://..."}
-}
-```
-Настройка:
-```powershell
-$env:WEBHOOK_URL = "http://localhost:9000/webhook"
-```
+Troubleshooting:
+- `BadRequest: Chat not found` — check `TELEGRAM_CHANNEL` value and ensure the bot is an admin
+- No images — verify `MEDIA_ROOT` mapping and that worker has access to media files; remote image download/upload is attempted before URL fallback
+- HTML visible as text — ensure `parse_mode=HTML` is used for message text; captions are short and must not contain broken HTML
 
-## Переменные окружения (backend)
+## AI Rewriter (Website and Telegram)
+The project includes an AI rewriter integrated with OpenAI API and a Telegram-specific rewriter.
+
+Models:
+- `RewriterConfig` — site-wide rewriter
+- `TelegramRewriterConfig` — Telegram-specific prompt/model and on/off switch
+
+Environment:
+- `OPENAI_API_KEY` — required
+- `OPENAI_BASE_URL` — optional (custom endpoint)
+- Timeouts/backoff/attempts controlled via settings (same strategy for Telegram rewriter)
+
+Behavior:
+- Telegram rewriter uses `rewrite_article_tg(title, content)` to return `{title, content, [hashtags], [theme]}`
+- Same retry/backoff pattern as the website rewriter; optional fallback model
+
+## Outbox/Webhook (optional integration)
+Signals create `OutboxEvent` on new content:
+- `news.created` (for `NewsItem`)
+- `column.created` (for `AuthorColumn`)
+
+`deliver_outbox` can POST events to `WEBHOOK_URL` with a JSON payload. This is not required for the Telegram channel bot (which uses periodic polling) but remains available if you need webhooks.
+
+## Backend Environment Variables
 - `DEBUG` (1/0)
 - `ALLOWED_HOSTS`
-- `USE_SQLITE` (1 — использовать SQLite локально)
+- `USE_SQLITE` (1 for local SQLite)
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
-- `TIME_ZONE` (UTC по умолчанию)
-- `PAGE_SIZE` (20 по умолчанию)
+- `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND` (Redis recommended)
+- `TIME_ZONE` (default: UTC)
+- `PAGE_SIZE` (default: 20)
 - `CORS_ALLOW_ALL_ORIGINS` (1/0)
-- `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`
-- `WEBHOOK_URL`
+- `WEBHOOK_URL` (optional, for outbox)
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL`
+- `OPENAI_API_KEY`, `OPENAI_BASE_URL` (optional)
+- Optional Telethon ingest: `TG_API_ID`, `TG_API_HASH`, `TG_STRING_SESSION`
 
-## Управление контентом
-- Источники: `/admin/core/newssource/`
-- Новости (read‑only): `/admin/core/newsitem/`
-- Колонки: `/admin/core/authorcolumn/`
+## Content Management
+- Sources (RSS): `/admin/core/newssource/`
+- Website sources (HTML): `/admin/core/websitesource/`
+- News (read-only list): `/admin/core/newsitem/`
+- Columns: `/admin/core/authorcolumn/`
+- Telegram rewriter config: `/admin/core/telegramrewriterconfig/`
 
-В `content_body` допускается HTML. Для продакшена можно подключить TinyMCE/CKEditor.
+Rich text (`content_body`) supports HTML; you can integrate TinyMCE/CKEditor for production.
 
-## Безопасность и прод
-- Настройте `ALLOWED_HOSTS`, HTTPS и реверс‑прокси.
-- Используйте PostgreSQL + Redis + Celery, масштабируйте worker’ы.
+## Production
+- Set `ALLOWED_HOSTS`, use HTTPS behind a reverse proxy
+- Use PostgreSQL + Redis + Celery; scale workers
+- Ensure the bot has permissions in the Telegram channel and the worker/beat are running
