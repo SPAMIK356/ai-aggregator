@@ -356,17 +356,13 @@ def deliver_outbox() -> dict:
 					body = (payload.get("body") or "").strip()
 					img = (payload.get("image_url") or "").strip()
 
-					# If this is a NewsItem event, re-fetch from DB and skip Telegram-origin items
+					# If this is a NewsItem event, re-fetch from DB to get latest data
 					try:
 						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
 							nid = payload.get("id")
 							if nid:
 								ni = NewsItem.objects.filter(pk=int(nid)).only("title", "description", "image_url", "image_file", "original_url").first()
 								if ni:
-									orig = (ni.original_url or "").lower()
-									if "t.me/" in orig or "telegram." in orig:
-										# Skip Telegram-origin items for bot posting
-										raise RuntimeError("skip_telegram_origin")
 									t = (ni.title or t).strip()
 									body = (ni.description or body or "").strip()
 									if not img:
