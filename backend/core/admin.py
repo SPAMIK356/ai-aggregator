@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, TelegramRewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink, AdBanner
+from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, TelegramRewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink, AdBanner, LinkFilter
 
 
 @admin.action(description="Activate selected")
@@ -105,6 +105,14 @@ class KeywordFilterAdmin(admin.ModelAdmin):
 	list_display = ("phrase", "is_active", "updated_at")
 	list_filter = ("is_active",)
 	search_fields = ("phrase",)
+	actions = (mark_active, mark_inactive)
+
+
+@admin.register(LinkFilter)
+class LinkFilterAdmin(admin.ModelAdmin):
+	list_display = ("prefix", "is_active", "updated_at")
+	list_filter = ("is_active",)
+	search_fields = ("prefix",)
 	actions = (mark_active, mark_inactive)
 
 

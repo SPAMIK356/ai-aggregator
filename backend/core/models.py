@@ -207,6 +207,20 @@ class KeywordFilter(TimeStampedModel):
 		return self.phrase
 
 
+class LinkFilter(TimeStampedModel):
+	"""List of link prefixes to strip from text before length checks/rewriting.
+
+	Example:
+	- prefix: "[ChannelName]https://t.me/" will remove any token starting with
+	  that prefix up to the next whitespace, e.g. "[ChannelName]https://t.me/chat/1234".
+	"""
+	prefix = models.CharField(max_length=255, help_text="Prefix to match at the start of a link, e.g. '[Channel]https://t.me/'")
+	is_active = models.BooleanField(default=True)
+
+	def __str__(self) -> str:
+		return self.prefix
+
+
 class ParserConfig(TimeStampedModel):
 	"""Global toggle for all parsing tasks."""
 	is_enabled = models.BooleanField(default=True)

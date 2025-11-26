@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import NewsItem, NewsSource
-from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig, Hashtag
+from .models import TelegramChannel, WebsiteSource, KeywordFilter, ParserConfig, Hashtag, LinkFilter
 from bs4 import BeautifulSoup
 from PIL import Image, ImageOps
 from urllib.parse import urlparse
@@ -62,6 +62,40 @@ def _safe_dt(value) -> datetime:
 
 def _strip_html_tags(value: str) -> str:
 	return re.sub(r"<[^>]+>", "", value)
+
+
+def _strip_blocked_links(text: str) -> str:
+	"""Remove any link-like tokens that start with configured prefixes.
+
+	For each active LinkFilter.prefix, we find case-insensitive occurrences and
+	strip from the prefix start up to the next whitespace character.
+	"""
+	if not text:
+		return text
+	try:
+		prefixes = list(LinkFilter.objects.filter(is_active=True).values_list("prefix", flat=True))
+	except Exception:
+		return text
+	prefixes = [p.strip() for p in prefixes if p and p.strip()]
+	if not prefixes:
+		return text
+
+	s = text
+	lower_s = s.lower()
+	for raw in prefixes:
+		pl = raw.lower()
+		start = 0
+		while True:
+			idx = lower_s.find(pl, start)
+			if idx == -1:
+				break
+			end = idx
+			while end < len(s) and not s[end].isspace():
+				end += 1
+			s = s[:idx] + s[end:]
+			lower_s = s.lower()
+			start = idx
+	return s
 
 
 def _to_plain_text(value: str) -> str:
@@ -272,6 +306,9 @@ def run_parser() -> dict:
 			title = getattr(entry, "title", "").strip()
 			link = getattr(entry, "link", "").strip()
 			description = getattr(entry, "summary", "").strip()
+			# Pre-process to remove blocked link prefixes before filters/length checks
+			title = _strip_blocked_links(title)
+			description = _strip_blocked_links(description)
 			published_parsed = getattr(entry, "published_parsed", None)
 			published_at = _safe_dt(published_parsed)
 			if not link:
@@ -496,6 +533,9 @@ def fetch_telegram_channels() -> dict:
 					max_id = max(max_id, m.id or 0)
 					raw_text = (getattr(m, "text", None) or getattr(m, "message", None) or "")
 					html = _format_telegram_html(raw_text, getattr(m, "entities", None))
+					# Remove blocked links before filters/length checks
+					raw_text = _strip_blocked_links(raw_text)
+					html = _strip_blocked_links(html)
 					if not (raw_text or html):
 						skipped += 1
 						continue
@@ -667,6 +707,11 @@ def fetch_websites() -> dict:
 					skipped += 1
 					logger.info("WEB empty link")
 					continue
+				# Pre-process text to remove blocked links before filters/length checks
+				title = _strip_blocked_links(title)
+				desc = _strip_blocked_links(desc)
+				full_body = _strip_blocked_links(full_body)
+
 				# Keyword filter (pre-rewrite)
 				if phrases_lc:
 					full_text = f"{title}\n{desc}".lower()
