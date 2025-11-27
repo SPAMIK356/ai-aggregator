@@ -2,7 +2,24 @@ from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
 
-from .models import AuthorColumn, NewsItem, NewsSource, OutboxEvent, TelegramChannel, WebsiteSource, RewriterConfig, TelegramRewriterConfig, KeywordFilter, ParserConfig, SitePage, Hashtag, SocialLink, AdBanner, LinkFilter
+from .models import (
+	AuthorColumn,
+	NewsItem,
+	NewsSource,
+	OutboxEvent,
+	TelegramChannel,
+	WebsiteSource,
+	RewriterConfig,
+	TelegramRewriterConfig,
+	AdClassifierConfig,
+	KeywordFilter,
+	ParserConfig,
+	SitePage,
+	Hashtag,
+	SocialLink,
+	AdBanner,
+	LinkFilter,
+)
 
 
 @admin.action(description="Activate selected")
@@ -98,6 +115,11 @@ class RewriterConfigAdmin(admin.ModelAdmin):
 @admin.register(TelegramRewriterConfig)
 class TelegramRewriterConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "model", "max_output_tokens", "updated_at")
+
+
+@admin.register(AdClassifierConfig)
+class AdClassifierConfigAdmin(admin.ModelAdmin):
+	list_display = ("is_enabled", "model", "updated_at")
 
 
 @admin.register(KeywordFilter)

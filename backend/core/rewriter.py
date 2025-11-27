@@ -10,7 +10,7 @@ from django.conf import settings
 from openai import OpenAI
 from openai import BadRequestError, APITimeoutError, RateLimitError
 
-from .models import RewriterConfig, TelegramRewriterConfig, Hashtag
+from .models import RewriterConfig, TelegramRewriterConfig, AdClassifierConfig, Hashtag
 
 
 def get_active_config() -> Optional[RewriterConfig]:
@@ -32,6 +32,15 @@ def get_active_telegram_config() -> Optional[TelegramRewriterConfig]:
 	return cfg if cfg and cfg.is_enabled else None
 
 
+def get_active_ad_classifier_config() -> Optional[AdClassifierConfig]:
+	"""Separate toggle/prompt for ad classification."""
+	from django.conf import settings as dj_settings
+	if not getattr(dj_settings, "REWRITER_ENABLED", False):
+		return None
+	cfg = AdClassifierConfig.objects.order_by("-updated_at").first()
+	return cfg if cfg and cfg.is_enabled else None
+
+
 def _lenient_json_parse(text: str) -> Optional[Dict[str, str]]:
 	"""Attempts to parse JSON even if the model wrapped it or added prose."""
 	try:
@@ -48,6 +57,31 @@ def _lenient_json_parse(text: str) -> Optional[Dict[str, str]]:
 			return json.loads(maybe)
 		except Exception:
 			return None
+	return None
+
+
+def _lenient_bool_parse(text: str) -> Optional[bool]:
+	"""Best-effort boolean parse from JSON or plain text."""
+	val: object = None
+	try:
+		data = json.loads(text)
+		if isinstance(data, dict):
+			val = data.get("is_ad", data.get("ad", data.get("flag")))
+		else:
+			val = data
+	except Exception:
+		val = text
+
+	if isinstance(val, bool):
+		return val
+	if isinstance(val, (int, float)):
+		return bool(val)
+	if isinstance(val, str):
+		v = val.strip().lower()
+		if v in ("true", "1", "yes", "y", "да"):
+			return True
+		if v in ("false", "0", "no", "n", "нет"):
+			return False
 	return None
 
 
@@ -276,6 +310,106 @@ def rewrite_article_tg(title: str, content: str) -> Optional[Dict[str, object]]:
 			time.sleep(backoff * (2 ** i))
 
 	logger.error("TG Rewriter failed after %s attempts: %s", attempts, last_err)
+	return None
+
+
+def is_ad_content(title: str, content: str) -> Optional[bool]:
+	"""Return True if content is classified as ad, False if not, or None on failure/disabled.
+
+	Uses AdClassifierConfig settings and shares retry/backoff strategy with rewriters.
+	"""
+	cfg = get_active_ad_classifier_config()
+	if not cfg:
+		return None
+	api_key = getattr(settings, "OPENAI_API_KEY", None)
+	if not api_key:
+		return None
+
+	base_url = getattr(settings, "OPENAI_BASE_URL", None)
+	base_timeout = float(getattr(settings, "REWRITER_TIMEOUT", 30.0))
+	max_timeout = float(getattr(settings, "REWRITER_MAX_TIMEOUT", 90.0))
+	attempts = int(getattr(settings, "REWRITER_ATTEMPTS", 6))
+	backoff = float(getattr(settings, "REWRITER_BACKOFF_SECONDS", 5.0))
+	logger = logging.getLogger(__name__)
+
+	system_prompt = cfg.prompt or (
+		"You are a strict classifier that decides if a news item is an advertisement. "
+		"Return json with a single key 'is_ad' which is either true or false. "
+		"Consider typical ads, sponsored posts, promos, giveaways, and other commercial content as ads."
+	)
+	if "json" not in system_prompt.lower():
+		system_prompt = system_prompt.strip() + " Return json object with key 'is_ad' set to true or false."
+
+	user_payload = {
+		"title": title,
+		"content": content,
+	}
+
+	last_err: Optional[Exception] = None
+	for i in range(attempts):
+		attempt_timeout = min(base_timeout * (2 ** i), max_timeout)
+		client = OpenAI(api_key=api_key, timeout=attempt_timeout, max_retries=0, base_url=base_url)
+		try:
+			# Primary attempt: enforce JSON mode
+			response = client.chat.completions.create(
+				model=cfg.model,
+				messages=[
+					{"role": "system", "content": system_prompt},
+					{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+				],
+				response_format={"type": "json_object"},
+			)
+			text = response.choices[0].message.content or "{}"
+			flag = _lenient_bool_parse(text)
+			if flag is not None:
+				return flag
+		except BadRequestError as e:
+			msg = str(e)
+			logger.warning("Ad classifier BadRequest on model=%s: %s", cfg.model, msg)
+			fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
+			if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
+				try:
+					response = client.chat.completions.create(
+						model=fallback_model,
+						messages=[
+							{"role": "system", "content": system_prompt},
+							{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+						],
+						response_format={"type": "json_object"},
+					)
+					text = response.choices[0].message.content or "{}"
+					flag = _lenient_bool_parse(text)
+					if flag is not None:
+						return flag
+				except Exception as e2:
+					last_err = e2
+					logger.warning("Ad classifier fallback model failed: %s", e2)
+			# Fallback: no response_format, ask for JSON in prompt
+			try:
+				response = client.chat.completions.create(
+					model=cfg.model,
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+					],
+				)
+				text = response.choices[0].message.content or "{}"
+				flag = _lenient_bool_parse(text)
+				if flag is not None:
+					return flag
+			except Exception as e3:
+				last_err = e3
+		except (APITimeoutError, RateLimitError) as e:
+			last_err = e
+			logger.warning("Ad classifier transient error (attempt %s/%s, timeout=%ss): %s", i + 1, attempts, int(attempt_timeout), e)
+		except Exception as e:
+			last_err = e
+			logger.exception("Ad classifier unexpected error: %s", e)
+		# Backoff before next attempt
+		if i < attempts - 1:
+			time.sleep(backoff * (2 ** i))
+
+	logger.error("Ad classifier failed after %s attempts: %s", attempts, last_err)
 	return None
 
 

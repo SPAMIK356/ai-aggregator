@@ -141,6 +141,23 @@ class TelegramRewriterConfig(TimeStampedModel):
 		return f"TG Rewriter ({'on' if self.is_enabled else 'off'})"
 
 
+class AdClassifierConfig(TimeStampedModel):
+	"""Admin-configurable prompt/model for AI ad detection.
+
+	Used to decide if a parsed item is an advertisement before saving.
+	"""
+	is_enabled = models.BooleanField(default=False)
+	model = models.CharField(max_length=64, default="gpt-4o-mini")
+	prompt = models.TextField(
+		blank=True,
+		help_text="System instructions for classifying if content is an ad. "
+		          "Must return JSON with key 'is_ad': true or false.",
+	)
+
+	def __str__(self) -> str:
+		return f"Ad classifier ({'on' if self.is_enabled else 'off'})"
+
+
 class WebsiteSource(TimeStampedModel):
 	"""Generic website source with CSS selectors to extract items.
 

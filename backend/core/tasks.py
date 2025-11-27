@@ -20,7 +20,7 @@ from PIL import Image, ImageOps
 from urllib.parse import urlparse
 import re
 from html import escape
-from .rewriter import rewrite_article
+from .rewriter import rewrite_article, is_ad_content
 import json
 try:
 	from telegram import Bot, ParseMode
@@ -328,6 +328,15 @@ def run_parser() -> dict:
 					if min_chars and len((title or "") + "\n" + (description or "")) < min_chars:
 						skipped += 1
 						continue
+					# AI ad classifier (best-effort) after length/keyword checks
+					try:
+						flag = is_ad_content(orig_title, orig_body)
+						if flag is True:
+							logger.info("RSS ad skip url=%s", link)
+							skipped += 1
+							continue
+					except Exception:
+						pass
 					# Pick theme from source.default_theme (fallback to AI)
 					theme_val = source.default_theme or NewsItem.Theme.AI
 					NewsItem.objects.create(
@@ -622,6 +631,15 @@ def fetch_telegram_channels() -> dict:
 							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
 								skipped += 1
 								continue
+							# AI ad classifier (best-effort) after length/keyword checks
+							try:
+								flag = is_ad_content(rew.get("title") or orig_title, effective_body)
+								if flag is True:
+									logger.info("TG ad skip url=%s", url)
+									skipped += 1
+									continue
+							except Exception:
+								pass
 						# Try to build image URL
 						img_url = ""
 						try:
@@ -790,6 +808,15 @@ def fetch_websites() -> dict:
 						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
 							skipped += 1
 							continue
+						# AI ad classifier (best-effort) after length/keyword checks
+						try:
+							flag = is_ad_content(rew.get("title") or title or link, effective_body)
+							if flag is True:
+								logger.info("WEB ad skip url=%s", link)
+								skipped += 1
+								continue
+						except Exception:
+							pass
 						img = ""
 						if ws.parse_images and ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
