@@ -428,8 +428,10 @@ def deliver_outbox() -> dict:
 								body = (rew.get("content") or body or "").strip()
 					except Exception:
 						pass
-					# Prefer Telegram HTML formatting with safe subset; fallback to plain text
-					text = f"{t}\n\n{body}".strip()
+					# Prefer Telegram HTML formatting with safe subset; fallback to plain text.
+					# We assume title is already present in body (rewriter/content),
+					# so we only send body and fall back to title if body is empty.
+					text = (body or t).strip()
 					text_html = _to_telegram_html(text)
 					text_plain = _to_plain_text(text)
 					if img:
