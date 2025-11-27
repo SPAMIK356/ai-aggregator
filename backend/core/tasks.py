@@ -428,13 +428,69 @@ def deliver_outbox() -> dict:
 								body = (rew.get("content") or body or "").strip()
 					except Exception:
 						pass
+					# Resolve local image path when possible and build absolute URLs when needed
+					media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+					local_path = ""
+					try:
+						# Prefer direct image_file path when available
+						if "ni" in locals() and getattr(ni, "image_file", None) and getattr(ni.image_file, "path", ""):
+							if os.path.exists(ni.image_file.path):  # type: ignore[attr-defined]
+								local_path = ni.image_file.path  # type: ignore[attr-defined]
+					except Exception:
+						local_path = ""
+					# Map relative MEDIA_URL-based URLs to filesystem paths
+					if not local_path and img:
+						try:
+							from urllib.parse import urlparse
+							p = urlparse(img)
+							if not p.scheme:
+								media_url_prefix = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
+								candidate = None
+								if img.startswith(media_url_prefix):
+									rel = img[len(media_url_prefix):].lstrip("/")
+									candidate = media_root / rel
+								elif img.startswith("/"):
+									candidate = media_root / img.lstrip("/")
+								else:
+									candidate = media_root / img
+								if candidate and candidate.exists():
+									local_path = str(candidate)
+						except Exception:
+							pass
+					# Build absolute URL for Telegram if we only have a relative path
+					try:
+						base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
+						if img and img.startswith("/") and base:
+							img = base.rstrip("/") + img
+					except Exception:
+						pass
 					# Prefer Telegram HTML formatting with safe subset; fallback to plain text.
 					# We assume title is already present in body (rewriter/content),
 					# so we only send body and fall back to title if body is empty.
 					text = (body or t).strip()
 					text_html = _to_telegram_html(text)
 					text_plain = _to_plain_text(text)
-					if img:
+					if local_path:
+						try:
+							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+							with open(local_path, "rb") as f:
+								bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
+							ok = True
+						except Exception:
+							# Fallbacks: try plain caption, then message-only
+							try:
+								with open(local_path, "rb") as f:
+									bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+								ok = True
+							except Exception:
+								try:
+									pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
+									bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
+									ok = True
+								except Exception:
+									bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
+									ok = True
+					elif img:
 						try:
 							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
 							bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
