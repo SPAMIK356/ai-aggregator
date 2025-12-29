@@ -66,7 +66,7 @@ export default function PageShell({
             </form>
             <CryptoWidget />
             <LanguageSwitcher locale={locale} />
-            <BurgerMenu />
+            <BurgerMenu locale={locale} />
           </nav>
           <div className="mobile-crypto">
             <CryptoWidget />
@@ -86,7 +86,7 @@ export default function PageShell({
             <a href={`${prefix}/contact`} className="nav-button">{t.contacts}</a>
           </nav>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-            <BurgerMenu />
+            <BurgerMenu locale={locale} />
           </div>
         </div>
       </footer>

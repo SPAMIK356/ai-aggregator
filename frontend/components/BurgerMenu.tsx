@@ -3,9 +3,46 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 
-export default function BurgerMenu() {
+type Locale = 'en' | 'ru';
+
+const translations = {
+    en: {
+        menu: 'Menu',
+        close: 'Close',
+        search: 'Search…',
+        home: 'Home',
+        crypto: 'Crypto',
+        blogs: 'Insider Blogs',
+        contacts: 'Contacts',
+        about: 'About',
+        privacy: 'Privacy Policy',
+        terms: 'Terms of Use',
+        newsFilters: 'News filters',
+        all: 'All',
+        ai: 'AI',
+    },
+    ru: {
+        menu: 'Меню',
+        close: 'Закрыть',
+        search: 'Поиск…',
+        home: 'Главная',
+        crypto: 'Крипта',
+        blogs: 'Инсайдерские блоги',
+        contacts: 'Контакты',
+        about: 'О нас',
+        privacy: 'Политика конфиденциальности',
+        terms: 'Условия использования',
+        newsFilters: 'Фильтры новостей',
+        all: 'Все',
+        ai: 'ИИ',
+    },
+};
+
+export default function BurgerMenu({ locale = 'en' }: { locale?: Locale }) {
     const [open, setOpen] = React.useState(false);
     const [mounted, setMounted] = React.useState(false);
+    const t = translations[locale];
+    const prefix = locale === 'ru' ? '/ru' : '';
 
     React.useEffect(() => {
         setMounted(true);
@@ -24,7 +61,7 @@ export default function BurgerMenu() {
 
     return (
         <>
-            <button className="burger-btn" aria-label="Menu" onClick={() => setOpen(true)}>
+            <button className="burger-btn" aria-label={t.menu} onClick={() => setOpen(true)}>
                 <span className="hb-line" />
                 <span className="hb-line" />
                 <span className="hb-line" />
@@ -34,27 +71,27 @@ export default function BurgerMenu() {
                     {open && <div className="backdrop" onClick={() => setOpen(false)} />}
                     <div className={"drawer" + (open ? " open" : "") } role="dialog" aria-modal="true">
                         <div className="drawer-header">
-                            <strong>Menu</strong>
-                            <button className="drawer-close" aria-label="Close" onClick={() => setOpen(false)}>×</button>
+                            <strong>{t.menu}</strong>
+                            <button className="drawer-close" aria-label={t.close} onClick={() => setOpen(false)}>×</button>
                         </div>
                         <div className="drawer-search">
-                            <form action="/search" method="get">
-                                <input name="q" type="text" placeholder="Search…" aria-label="Search" />
+                            <form action={`${prefix}/search`} method="get">
+                                <input name="q" type="text" placeholder={t.search} aria-label={t.search} />
                             </form>
                         </div>
                         <nav className="drawer-nav">
-                            <a href="/" onClick={() => setOpen(false)} className="nav-button">Home</a>
-                            <a href="/news?theme=CRYPTO" onClick={() => setOpen(false)} className="nav-button">Crypto</a>
-                            <a href="/columns" onClick={() => setOpen(false)} className="nav-button">Insider Blogs</a>
-                            <a href="/contact" onClick={() => setOpen(false)} className="nav-button">Contacts</a>
-                            <a href="/about" onClick={() => setOpen(false)} className="nav-button">About</a>
-                            <a href="/privacy" onClick={() => setOpen(false)} className="nav-button">Privacy Policy</a>
-                            <a href="/terms" onClick={() => setOpen(false)} className="nav-button">Terms of Use</a>
+                            <a href={`${prefix}/`} onClick={() => setOpen(false)} className="nav-button">{t.home}</a>
+                            <a href={`${prefix}/news?theme=CRYPTO`} onClick={() => setOpen(false)} className="nav-button">{t.crypto}</a>
+                            <a href={`${prefix}/columns`} onClick={() => setOpen(false)} className="nav-button">{t.blogs}</a>
+                            <a href={`${prefix}/contact`} onClick={() => setOpen(false)} className="nav-button">{t.contacts}</a>
+                            <a href={`${prefix}/about`} onClick={() => setOpen(false)} className="nav-button">{t.about}</a>
+                            <a href={`${prefix}/privacy`} onClick={() => setOpen(false)} className="nav-button">{t.privacy}</a>
+                            <a href={`${prefix}/terms`} onClick={() => setOpen(false)} className="nav-button">{t.terms}</a>
                             <div className="drawer-sep" />
-                            <div className="drawer-section">News filters</div>
-                            <a href="/news" onClick={() => setOpen(false)} className="pill">All</a>
-                            <a href="/news?theme=AI" onClick={() => setOpen(false)} className="pill">AI</a>
-                            <a href="/news?theme=CRYPTO" onClick={() => setOpen(false)} className="pill">Crypto</a>
+                            <div className="drawer-section">{t.newsFilters}</div>
+                            <a href={`${prefix}/news`} onClick={() => setOpen(false)} className="pill">{t.all}</a>
+                            <a href={`${prefix}/news?theme=AI`} onClick={() => setOpen(false)} className="pill">{t.ai}</a>
+                            <a href={`${prefix}/news?theme=CRYPTO`} onClick={() => setOpen(false)} className="pill">{t.crypto}</a>
                         </nav>
                     </div>
                 </>, document.body)}
