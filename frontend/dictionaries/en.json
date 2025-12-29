@@ -1,0 +1,36 @@
+{
+  "site": {
+    "name": "2049.news",
+    "description": "News from the future: AI, technology, crypto"
+  },
+  "nav": {
+    "home": "Home",
+    "crypto": "Crypto",
+    "blogs": "Insider Blogs",
+    "contacts": "Contacts",
+    "search": "Search…"
+  },
+  "hero": {
+    "title": "News from the future that is already happening",
+    "description": "2049.news is a media outlet about the future of technology, artificial intelligence, and cryptoeconomics. Here, content is created by developers and entrepreneurs themselves — the people who are driving progress.",
+    "slogans": [
+      "AI, technology, crypto — a look into 2049",
+      "A place where developers, entrepreneurs, and visionaries write the history of the future",
+      "From cyberpunk to reality: analyzing what is changing the world right now",
+      "2049 — not just a date, but a metaphor for the future"
+    ]
+  },
+  "sections": {
+    "news": "News from the future",
+    "blogs": "Insider Blogs"
+  },
+  "footer": {
+    "about": "2049.news — a media about the future of technology, artificial intelligence, and the crypto economy. We publish news, opinion columns and analysis from practitioners — developers, founders and researchers."
+  },
+  "common": {
+    "readMore": "Read more",
+    "loading": "Loading...",
+    "noResults": "No results found"
+  }
+}
+

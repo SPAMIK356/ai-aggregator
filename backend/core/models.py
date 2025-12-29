@@ -36,6 +36,10 @@ class NewsItem(TimeStampedModel):
 	image_url = models.CharField(max_length=1000, blank=True)
 	image_file = models.ImageField(upload_to="news/", null=True, blank=True)
 
+	# Russian translations (populated during parsing via OpenAI)
+	title_ru = models.CharField(max_length=500, blank=True)
+	description_ru = models.TextField(blank=True)
+
 	class Theme(models.TextChoices):
 		AI = "AI", "AI"
 		CRYPTO = "CRYPTO", "CRYPTO"
@@ -56,6 +60,10 @@ class AuthorColumn(TimeStampedModel):
 	image_file = models.ImageField(upload_to="columns/", null=True, blank=True)
 	theme = models.CharField(max_length=16, choices=NewsItem.Theme.choices, default=NewsItem.Theme.AI, db_index=True)
 	hashtags = models.ManyToManyField("Hashtag", blank=True, related_name="author_columns")
+
+	# Russian translations (populated during parsing via OpenAI)
+	title_ru = models.CharField(max_length=500, blank=True)
+	content_body_ru = models.TextField(blank=True)
 
 	def __str__(self) -> str:
 		return f"{self.title} — {self.author_name}"
@@ -156,6 +164,23 @@ class AdClassifierConfig(TimeStampedModel):
 
 	def __str__(self) -> str:
 		return f"Ad classifier ({'on' if self.is_enabled else 'off'})"
+
+
+class TranslatorConfig(TimeStampedModel):
+	"""Admin-configurable prompt/model for EN→RU translation.
+
+	Used to translate news items and columns to Russian during parsing.
+	"""
+	is_enabled = models.BooleanField(default=False)
+	model = models.CharField(max_length=64, default="gpt-4o-mini")
+	prompt = models.TextField(
+		blank=True,
+		help_text="System instructions for translating content from English to Russian. "
+		          "Must return JSON with keys 'title_ru' and 'content_ru'.",
+	)
+
+	def __str__(self) -> str:
+		return f"Translator ({'on' if self.is_enabled else 'off'})"
 
 
 class WebsiteSource(TimeStampedModel):

@@ -8,12 +8,13 @@ type PostType = "news" | "columns";
 
 type Loaded = any & { _similar?: any[]; _social?: any[] };
 
-export default function PostInfiniteReader({ type, currentId }: { type: PostType; currentId: number }) {
+export default function PostInfiniteReader({ type, currentId, locale = 'en' }: { type: PostType; currentId: number; locale?: string }) {
 	const [items, setItems] = useState<Loaded[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [finished, setFinished] = useState(false);
 	const sentinelRef = useRef<HTMLDivElement | null>(null);
 	const nextIdRef = useRef<number | null>(currentId);
+	const isRu = locale === 'ru';
 
 	useEffect(() => {
 		const el = sentinelRef.current;
@@ -54,18 +55,24 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 		}
 	}
 
+	// Helper to get localized content
+	const getTitle = (it: any) => isRu ? (it.title_ru || it.title) : it.title;
+	const getDescription = (it: any) => isRu ? (it.description_ru || it.description) : it.description;
+	const getContentBody = (it: any) => isRu ? (it.content_body_ru || it.content_body) : it.content_body;
+	const pathPrefix = isRu ? '/ru' : '';
+
 	return (
 		<div>
 			{items.map((it) => (
 				<article key={`${type}-${it.id}`} className="prose" style={{ marginTop: 32 }}>
-					<h2 style={{ marginBottom: 8 }}>{it.title}</h2>
+					<h2 style={{ marginBottom: 8 }}>{getTitle(it)}</h2>
 					<div className="meta" style={{ marginBottom: 16 }}>
 						{type === "news" ? it.source_name : it.author_name} · {new Date(it.published_at).toLocaleString('ru-RU')}
 					</div>
 				{(it.resolved_image || it.image_url) && (
 					<p><SmartThumb src={it.resolved_image || it.image_url} /></p>
 				)}
-					<div dangerouslySetInnerHTML={{ __html: type === "news" ? (it.description || "") : (it.content_body || "") }} />
+					<div dangerouslySetInnerHTML={{ __html: type === "news" ? (getDescription(it) || "") : (getContentBody(it) || "") }} />
 				{/* Promo banner after content */}
 				<div style={{ marginTop: 12 }}>
 					<AdBanner variant="post" />
@@ -86,12 +93,12 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 						</div>
 					)}
 					<hr style={{ margin: '24px 0', borderColor: 'var(--border)' }} />
-					<h3 style={{ marginBottom: 12 }}>Похожие материалы</h3>
+					<h3 style={{ marginBottom: 12 }}>{isRu ? 'Похожие материалы' : 'Related posts'}</h3>
 					<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 						{(it._similar || []).map((sp: any) => (
-							<a key={sp.id} href={`/${sp.type === 'column' ? 'columns' : 'news'}/${sp.id}`} className="card">
+							<a key={sp.id} href={`${pathPrefix}/${sp.type === 'column' ? 'columns' : 'news'}/${sp.id}`} className="card">
 								{sp.resolved_image && <img src={sp.resolved_image} alt="" className="thumb" />}
-								<div className="card-title" style={{ marginTop: 8 }}>{sp.title}</div>
+								<div className="card-title" style={{ marginTop: 8 }}>{isRu ? (sp.title_ru || sp.title) : sp.title}</div>
 							</a>
 						))}
 					</div>
@@ -99,7 +106,7 @@ export default function PostInfiniteReader({ type, currentId }: { type: PostType
 			))}
 			{!finished && (
 				<div ref={sentinelRef} style={{ padding: 12, textAlign: 'center', opacity: .7 }}>
-					{loading ? 'Загрузка…' : 'Прокрутите вниз для загрузки следующего материала'}
+					{loading ? (isRu ? 'Загрузка…' : 'Loading...') : (isRu ? 'Прокрутите вниз для загрузки следующего материала' : 'Scroll down to load next post')}
 				</div>
 			)}
 		</div>

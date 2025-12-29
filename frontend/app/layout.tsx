@@ -5,13 +5,14 @@ import newsIcon from '../icons/News_site.png';
 import authorsIcon from '../icons/Autors.png';
 import contactIcon from '../icons/Contact.png';
 import CryptoWidget from '../components/CryptoWidget';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import dynamic from 'next/dynamic';
 const BurgerMenu = dynamic(() => import('../components/BurgerMenu'), { ssr: false });
 const MobileHeaderScroll = dynamic(() => import('../components/MobileHeaderScroll'), { ssr: false });
 
 export const metadata = {
 	title: '2049.news',
-	description: 'Новости будущего: AI, технологии, крипто',
+	description: 'News from the future: AI, technology, crypto',
 };
 
 export const viewport = {
@@ -24,8 +25,9 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+	// Default English layout (Russian handled via /ru route group)
 	return (
-		<html lang="ru">
+		<html lang="en">
 			<body>
 				<MobileHeaderScroll />
                 <header className="site-header">
@@ -44,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<input name="q" type="text" placeholder="Search…" aria-label="Search" />
 					</form>
 					<CryptoWidget />
+					<LanguageSwitcher locale="en" />
 						<BurgerMenu />
 					</nav>
 				{/* Mobile crypto strip under the nav */}

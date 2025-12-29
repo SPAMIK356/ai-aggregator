@@ -20,7 +20,7 @@ from PIL import Image, ImageOps
 from urllib.parse import urlparse
 import re
 from html import escape
-from .rewriter import rewrite_article, is_ad_content
+from .rewriter import rewrite_article, is_ad_content, translate_to_russian
 import json
 try:
 	from telegram import Bot, ParseMode
@@ -339,7 +339,7 @@ def run_parser() -> dict:
 						pass
 					# Pick theme from source.default_theme (fallback to AI)
 					theme_val = source.default_theme or NewsItem.Theme.AI
-					NewsItem.objects.create(
+					n = NewsItem.objects.create(
 						title=title or link,
 						original_url=link,
 						description=description[:2000],
@@ -347,6 +347,15 @@ def run_parser() -> dict:
 						source_name=source.title or source.url,
 						theme=theme_val,
 					)
+					# Translate to Russian (best-effort)
+					try:
+						tr = translate_to_russian(n.title, n.description)
+						if tr:
+							n.title_ru = (tr.get("title_ru") or "")[:500]
+							n.description_ru = (tr.get("content_ru") or "")[:10000]
+							n.save(update_fields=["title_ru", "description_ru"])
+					except Exception:
+						logger.exception("RSS translation failed url=%s", link)
 					created += 1
 			except IntegrityError:
 				skipped += 1
@@ -706,6 +715,15 @@ def fetch_telegram_channels() -> dict:
 									n.hashtags.add(*objs)
 						except Exception:
 							logger.exception("Attach hashtags failed (TG)")
+						# Translate to Russian (best-effort)
+						try:
+							tr = translate_to_russian(n.title, n.description)
+							if tr:
+								n.title_ru = (tr.get("title_ru") or "")[:500]
+								n.description_ru = (tr.get("content_ru") or "")[:10000]
+								n.save(update_fields=["title_ru", "description_ru"])
+						except Exception:
+							logger.exception("TG translation failed url=%s", url)
 						logger.info("TG created NewsItem url=%s image_url=%s", url, img_url)
 						created += 1
 					except IntegrityError:
@@ -884,6 +902,15 @@ def fetch_websites() -> dict:
 									n.hashtags.add(*objs)
 						except Exception:
 							logger.exception("Attach hashtags failed (WEB)")
+						# Translate to Russian (best-effort)
+						try:
+							tr = translate_to_russian(n.title, n.description)
+							if tr:
+								n.title_ru = (tr.get("title_ru") or "")[:500]
+								n.description_ru = (tr.get("content_ru") or "")[:10000]
+								n.save(update_fields=["title_ru", "description_ru"])
+						except Exception:
+							logger.exception("WEB translation failed url=%s", link)
 						created += 1
 				except IntegrityError:
 					skipped += 1

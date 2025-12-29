@@ -12,6 +12,7 @@ from .models import (
 	RewriterConfig,
 	TelegramRewriterConfig,
 	AdClassifierConfig,
+	TranslatorConfig,
 	KeywordFilter,
 	ParserConfig,
 	SitePage,
@@ -67,7 +68,11 @@ class NewsItemAdmin(admin.ModelAdmin):
 	search_fields = ("title", "original_url", "source_name")
 	readonly_fields = ("created_at", "updated_at")
 	filter_horizontal = ("hashtags",)
-	fields = ("title", "original_url", "description", "published_at", "source_name", "theme", "hashtags", "image_url", "image_file", "created_at", "updated_at")
+	fieldsets = (
+		(None, {"fields": ("title", "original_url", "description", "published_at", "source_name", "theme", "hashtags", "image_url", "image_file")}),
+		("Russian Translation", {"fields": ("title_ru", "description_ru"), "classes": ("collapse",)}),
+		("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+	)
 
 
 @admin.register(AuthorColumn)
@@ -76,7 +81,11 @@ class AuthorColumnAdmin(admin.ModelAdmin):
 	search_fields = ("title", "author_name")
 	readonly_fields = ("created_at", "updated_at")
 	filter_horizontal = ("hashtags",)
-	fields = ("title", "author_name", "content_body", "published_at", "theme", "hashtags", "image_url", "image_file", "created_at", "updated_at")
+	fieldsets = (
+		(None, {"fields": ("title", "author_name", "content_body", "published_at", "theme", "hashtags", "image_url", "image_file")}),
+		("Russian Translation", {"fields": ("title_ru", "content_body_ru"), "classes": ("collapse",)}),
+		("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+	)
 
 
 @admin.register(OutboxEvent)
@@ -119,6 +128,11 @@ class TelegramRewriterConfigAdmin(admin.ModelAdmin):
 
 @admin.register(AdClassifierConfig)
 class AdClassifierConfigAdmin(admin.ModelAdmin):
+	list_display = ("is_enabled", "model", "updated_at")
+
+
+@admin.register(TranslatorConfig)
+class TranslatorConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "model", "updated_at")
 
 

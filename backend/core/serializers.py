@@ -18,8 +18,10 @@ class NewsItemSerializer(serializers.ModelSerializer):
 		fields = [
 			"id",
 			"title",
+			"title_ru",
 			"original_url",
 			"description",
+			"description_ru",
 			"published_at",
 			"source_name",
 			"image_url",
@@ -48,8 +50,10 @@ class NewsItemDetailSerializer(serializers.ModelSerializer):
 		fields = [
 			"id",
 			"title",
+			"title_ru",
 			"original_url",
 			"description",
+			"description_ru",
 			"published_at",
 			"source_name",
 			"image_url",
@@ -74,7 +78,7 @@ class AuthorColumnListSerializer(serializers.ModelSerializer):
 	hashtags = serializers.SerializerMethodField()
 	class Meta:
 		model = AuthorColumn
-		fields = ["id", "title", "author_name", "published_at", "image_url", "resolved_image", "theme", "hashtags"]
+		fields = ["id", "title", "title_ru", "author_name", "published_at", "image_url", "resolved_image", "theme", "hashtags"]
 
 	def get_resolved_image(self, obj: AuthorColumn) -> str:
 		if getattr(obj, "image_file", None):
@@ -93,7 +97,7 @@ class AuthorColumnDetailSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = AuthorColumn
-		fields = ["id", "title", "author_name", "published_at", "content_body", "image_url", "resolved_image", "theme", "hashtags"]
+		fields = ["id", "title", "title_ru", "author_name", "published_at", "content_body", "content_body_ru", "image_url", "resolved_image", "theme", "hashtags"]
 
 	def get_resolved_image(self, obj: AuthorColumn) -> str:
 		if getattr(obj, "image_file", None):

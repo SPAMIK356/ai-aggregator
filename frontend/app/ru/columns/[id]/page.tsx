@@ -1,0 +1,61 @@
+import SmartThumb from "../../../../components/SmartThumb";
+import SocialLinks from "../../../../components/SocialLinks";
+import AdBanner from "../../../../components/AdBanner";
+import PostInfiniteReader from "../../../../components/PostInfiniteReader";
+
+interface ColumnDetail {
+  id: number;
+  title: string;
+  title_ru?: string;
+  author_name: string;
+  published_at: string;
+  content_body: string;
+  content_body_ru?: string;
+  image_url?: string;
+  resolved_image?: string;
+  theme?: 'AI' | 'CRYPTO';
+  hashtags?: { slug: string; name: string }[];
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+}
+
+export default async function RuColumnDetailPage({ params }: { params: { id: string } }) {
+  const api = process.env.NEXT_SERVER_API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000/api';
+  const data = await fetchJson<ColumnDetail>(`${api}/columns/${params.id}/`);
+  const similar = await fetchJson<{ results: { id: number; type: 'column'; title: string; title_ru?: string; resolved_image?: string }[] }>(`${api}/posts/similar/?type=column&id=${params.id}&limit=2`);
+  
+  const title = data.title_ru || data.title;
+  const content = data.content_body_ru || data.content_body;
+
+  return (
+    <article className="prose">
+      <h1 style={{ marginBottom: 8 }}>{title}</h1>
+      <div className="meta" style={{ marginBottom: 16 }}>{data.author_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
+      {(data.resolved_image || data.image_url) && (
+        <p><SmartThumb src={data.resolved_image || data.image_url!} /></p>
+      )}
+      <div dangerouslySetInnerHTML={{ __html: content }} />
+      {(data.hashtags && data.hashtags.length > 0) && (
+        <p className="meta" style={{ marginTop: 12 }}>{data.hashtags.map(h => <span key={h.slug} style={{ marginRight: 8 }}>#{h.name}</span>)}</p>
+      )}
+      <SocialLinks />
+      <AdBanner />
+      <hr style={{ margin: '24px 0', borderColor: 'var(--border)' }} />
+      <h3 style={{ marginBottom: 12 }}>Похожие записи</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {similar.results.map(item => (
+          <a key={item.id} href={`/ru/columns/${item.id}`} className="card">
+            {item.resolved_image && <img src={item.resolved_image} alt="" className="thumb" />}
+            <div className="card-title" style={{ marginTop: 8 }}>{item.title_ru || item.title}</div>
+          </a>
+        ))}
+      </div>
+      <PostInfiniteReader type="columns" currentId={parseInt(params.id, 10)} locale="ru" />
+    </article>
+  );
+}
+

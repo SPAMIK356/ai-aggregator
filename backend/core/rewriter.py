@@ -10,7 +10,7 @@ from django.conf import settings
 from openai import OpenAI
 from openai import BadRequestError, APITimeoutError, RateLimitError
 
-from .models import RewriterConfig, TelegramRewriterConfig, AdClassifierConfig, Hashtag
+from .models import RewriterConfig, TelegramRewriterConfig, AdClassifierConfig, TranslatorConfig, Hashtag
 
 
 def get_active_config() -> Optional[RewriterConfig]:
@@ -38,6 +38,15 @@ def get_active_ad_classifier_config() -> Optional[AdClassifierConfig]:
 	if not getattr(dj_settings, "REWRITER_ENABLED", False):
 		return None
 	cfg = AdClassifierConfig.objects.order_by("-updated_at").first()
+	return cfg if cfg and cfg.is_enabled else None
+
+
+def get_active_translator_config() -> Optional[TranslatorConfig]:
+	"""Separate toggle/prompt for EN→RU translation."""
+	from django.conf import settings as dj_settings
+	if not getattr(dj_settings, "REWRITER_ENABLED", False):
+		return None
+	cfg = TranslatorConfig.objects.order_by("-updated_at").first()
 	return cfg if cfg and cfg.is_enabled else None
 
 
@@ -410,6 +419,112 @@ def is_ad_content(title: str, content: str) -> Optional[bool]:
 			time.sleep(backoff * (2 ** i))
 
 	logger.error("Ad classifier failed after %s attempts: %s", attempts, last_err)
+	return None
+
+
+def translate_to_russian(title: str, content: str) -> Optional[Dict[str, str]]:
+	"""Translate title and content from English to Russian.
+
+	Uses TranslatorConfig settings and shares retry/backoff strategy with rewriters.
+	Returns dict with 'title_ru' and 'content_ru' keys, or None on failure/disabled.
+	"""
+	cfg = get_active_translator_config()
+	if not cfg:
+		return None
+	api_key = getattr(settings, "OPENAI_API_KEY", None)
+	if not api_key:
+		return None
+
+	base_url = getattr(settings, "OPENAI_BASE_URL", None)
+	base_timeout = float(getattr(settings, "REWRITER_TIMEOUT", 30.0))
+	max_timeout = float(getattr(settings, "REWRITER_MAX_TIMEOUT", 90.0))
+	attempts = int(getattr(settings, "REWRITER_ATTEMPTS", 6))
+	backoff = float(getattr(settings, "REWRITER_BACKOFF_SECONDS", 5.0))
+	logger = logging.getLogger(__name__)
+
+	system_prompt = cfg.prompt or (
+		"You are a professional translator. Translate the given title and content from English to Russian. "
+		"Preserve the original meaning, tone, and any technical terms. "
+		"Return json with keys 'title_ru' (translated title) and 'content_ru' (translated content)."
+	)
+	if "json" not in system_prompt.lower():
+		system_prompt = system_prompt.strip() + " Return json object with keys 'title_ru' and 'content_ru'."
+
+	user_payload = {
+		"title": title,
+		"content": content,
+	}
+
+	last_err: Optional[Exception] = None
+	for i in range(attempts):
+		attempt_timeout = min(base_timeout * (2 ** i), max_timeout)
+		client = OpenAI(api_key=api_key, timeout=attempt_timeout, max_retries=0, base_url=base_url)
+		try:
+			response = client.chat.completions.create(
+				model=cfg.model,
+				messages=[
+					{"role": "system", "content": system_prompt},
+					{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+				],
+				response_format={"type": "json_object"},
+			)
+			text = response.choices[0].message.content or "{}"
+			data = _lenient_json_parse(text) or {}
+			title_ru = data.get("title_ru") or data.get("title") or ""
+			content_ru = data.get("content_ru") or data.get("content") or ""
+			if title_ru or content_ru:
+				return {"title_ru": title_ru, "content_ru": content_ru}
+		except BadRequestError as e:
+			msg = str(e)
+			logger.warning("Translator BadRequest on model=%s: %s", cfg.model, msg)
+			fallback_model = getattr(settings, "REWRITER_FALLBACK_MODEL", "gpt-4o-mini")
+			if "model" in msg.lower() or "does not exist" in msg.lower() or "unknown" in msg.lower():
+				try:
+					response = client.chat.completions.create(
+						model=fallback_model,
+						messages=[
+							{"role": "system", "content": system_prompt},
+							{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+						],
+						response_format={"type": "json_object"},
+					)
+					text = response.choices[0].message.content or "{}"
+					data = _lenient_json_parse(text) or {}
+					title_ru = data.get("title_ru") or data.get("title") or ""
+					content_ru = data.get("content_ru") or data.get("content") or ""
+					if title_ru or content_ru:
+						return {"title_ru": title_ru, "content_ru": content_ru}
+				except Exception as e2:
+					last_err = e2
+					logger.warning("Translator fallback model failed: %s", e2)
+			# Fallback: no response_format
+			try:
+				response = client.chat.completions.create(
+					model=cfg.model,
+					messages=[
+						{"role": "system", "content": system_prompt},
+						{"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+					],
+				)
+				text = response.choices[0].message.content or "{}"
+				data = _lenient_json_parse(text) or {}
+				title_ru = data.get("title_ru") or data.get("title") or ""
+				content_ru = data.get("content_ru") or data.get("content") or ""
+				if title_ru or content_ru:
+					return {"title_ru": title_ru, "content_ru": content_ru}
+			except Exception as e3:
+				last_err = e3
+		except (APITimeoutError, RateLimitError) as e:
+			last_err = e
+			logger.warning("Translator transient error (attempt %s/%s, timeout=%ss): %s", i + 1, attempts, int(attempt_timeout), e)
+		except Exception as e:
+			last_err = e
+			logger.exception("Translator unexpected error: %s", e)
+		# Backoff before next attempt
+		if i < attempts - 1:
+			time.sleep(backoff * (2 ** i))
+
+	logger.error("Translator failed after %s attempts: %s", attempts, last_err)
 	return None
 
 
