@@ -1,3 +1,5 @@
+import PageShell from "../../components/PageShell";
+
 async function fetchJson(url: string) {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch');
@@ -37,7 +39,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
   const data = await fetchJson(`${api}/columns/?page=${page}`);
 
   return (
-    <div>
+    <PageShell locale="en">
       <h1 className="section-title">Insider Blogs</h1>
       <div className="cards" style={{ marginTop: 12 }}>
         {data.results.map((c: any, idx: number) => (
@@ -68,7 +70,7 @@ export default async function ColumnsListPage({ searchParams }: { searchParams: 
         {page > 1 && <a className="pill" href={`?page=${page - 1}`}>&larr; Prev</a>}
         {data.next && <a className="pill" href={`?page=${page + 1}`}>Next &rarr;</a>}
       </div>
-    </div>
+    </PageShell>
   );
 }
 

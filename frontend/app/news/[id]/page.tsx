@@ -2,6 +2,7 @@ import SmartThumb from "../../../components/SmartThumb";
 import SocialLinks from "../../../components/SocialLinks";
 import AdBanner from "../../../components/AdBanner";
 import PostInfiniteReader from "../../../components/PostInfiniteReader";
+import PageShell from "../../../components/PageShell";
 interface NewsDetail {
   id: number;
   title: string;
@@ -26,6 +27,7 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
   const data = await fetchJson<NewsDetail>(`${api}/news/${params.id}/`);
   const similar = await fetchJson<{ results: { id: number; type: 'news'; title: string; resolved_image?: string }[] }>(`${api}/posts/similar/?type=news&id=${params.id}&limit=2`);
   return (
+    <PageShell locale="en">
     <article className="prose">
       <h1 style={{ marginBottom: 8 }}>{data.title}</h1>
       <div className="meta" style={{ marginBottom: 16 }}>{data.source_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
@@ -50,6 +52,7 @@ export default async function NewsDetailPage({ params }: { params: { id: string 
       </div>
       <PostInfiniteReader type="news" currentId={parseInt(params.id, 10)} />
     </article>
+    </PageShell>
   );
 }
 

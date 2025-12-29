@@ -1,3 +1,5 @@
+import PageShell from '../components/PageShell';
+
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch');
@@ -59,7 +61,7 @@ export default async function HomePage() {
   const tickerDate = `${datePrefix} 2049`;
 
   return (
-    <>
+    <PageShell locale="en">
       <section className="hero">
       <h1>News from the future that is already happening</h1>
         <p>
@@ -130,7 +132,7 @@ export default async function HomePage() {
         </section>
       </div>
 
-    </>
+    </PageShell>
   );
 }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import PageShell from '../../components/PageShell';
 
 async function fetchJson<T>(url: string): Promise<T> {
 	const res = await fetch(url, { cache: 'no-store' });
@@ -32,11 +33,11 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 	const crypto = (cryptoData.results || []).slice(0, 10);
 
 	return (
-		<div>
-			<h1 className="section-title" style={{ textAlign: 'center' }}>Поиск{q ? `: "${q}"` : ''}</h1>
+		<PageShell locale="en">
+			<h1 className="section-title" style={{ textAlign: 'center' }}>Search{q ? `: "${q}"` : ''}</h1>
 			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 12, alignItems: 'start' }}>
 				<section style={{ textAlign: 'center' }}>
-					<h2 className="section-title">ИИ</h2>
+					<h2 className="section-title">AI</h2>
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
 						{ai.length ? (
 							ai.map(item => (
@@ -53,13 +54,13 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 								</a>
 							))
 						) : (
-							<p className="meta" style={{ opacity: .7 }}>Ничего не найдено</p>
+							<p className="meta" style={{ opacity: .7 }}>No results found</p>
 						)}
 					</div>
 				</section>
 
 				<section style={{ textAlign: 'center' }}>
-					<h2 className="section-title">Крипта</h2>
+					<h2 className="section-title">Crypto</h2>
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
 						{crypto.length ? (
 							crypto.map(item => (
@@ -76,11 +77,11 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 								</a>
 							))
 						) : (
-							<p className="meta" style={{ opacity: .7 }}>Ничего не найдено</p>
+							<p className="meta" style={{ opacity: .7 }}>No results found</p>
 						)}
 					</div>
 				</section>
 			</div>
-		</div>
+		</PageShell>
 	);
 }

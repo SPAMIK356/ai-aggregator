@@ -1,3 +1,5 @@
+import PageShell from "../../components/PageShell";
+
 async function fetchJson(url: string) {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch');
@@ -44,7 +46,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
     : 'We gather key news about future technologies: AI, the crypto market, and breakthroughs that are changing the world. Concise, to the point, and without the extra noise.';
 
   return (
-    <div>
+    <PageShell locale="en">
       <section className="hero">
         <h1>News</h1>
         <p>{desc}</p>
@@ -79,7 +81,7 @@ export default async function NewsListPage({ searchParams }: { searchParams: { p
         {page > 1 && <a className="pill" href={`?page=${page - 1}${themeParam ? `&theme=${theme}` : ''}`}>&larr; Prev</a>}
         {data.next && <a className="pill" href={`?page=${page + 1}${themeParam ? `&theme=${theme}` : ''}`}>Next &rarr;</a>}
       </div>
-    </div>
+    </PageShell>
   );
 }
 

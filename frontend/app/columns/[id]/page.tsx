@@ -2,6 +2,7 @@ import SmartThumb from "../../../components/SmartThumb";
 import SocialLinks from "../../../components/SocialLinks";
 import AdBanner from "../../../components/AdBanner";
 import PostInfiniteReader from "../../../components/PostInfiniteReader";
+import PageShell from "../../../components/PageShell";
 interface ColumnDetail {
   id: number;
   title: string;
@@ -25,6 +26,7 @@ export default async function ColumnDetailPage({ params }: { params: { id: strin
   const data = await fetchJson<ColumnDetail>(`${api}/columns/${params.id}/`);
   const similar = await fetchJson<{ results: { id: number; type: 'column'; title: string; resolved_image?: string }[] }>(`${api}/posts/similar/?type=column&id=${params.id}&limit=2`);
   return (
+    <PageShell locale="en">
     <article className="prose">
       <h1 style={{ marginBottom: 8 }}>{data.title}</h1>
       <div className="meta" style={{ marginBottom: 16 }}>{data.author_name} · {new Date(data.published_at).toLocaleString('ru-RU')}</div>
@@ -49,6 +51,7 @@ export default async function ColumnDetailPage({ params }: { params: { id: strin
       </div>
       <PostInfiniteReader type="columns" currentId={parseInt(params.id, 10)} />
     </article>
+    </PageShell>
   );
 }
 

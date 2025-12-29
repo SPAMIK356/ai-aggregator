@@ -1,7 +1,9 @@
 import React from 'react';
+import PageShell from '../../components/PageShell';
 
 export default function ContactPage() {
 	return (
+		<PageShell locale="en">
 		<article className="prose">
   <header>
     <h1>Contacts</h1>
@@ -46,7 +48,7 @@ export default function ContactPage() {
     <p>For partnership inquiries: <strong>2049.news.partners@gmail.com</strong></p>
   </section>
 </article>
-
+		</PageShell>
 	);
 }
 
