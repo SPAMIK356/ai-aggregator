@@ -602,11 +602,14 @@ def fetch_telegram_channels() -> dict:
 				msgs = list(client.iter_messages(entity, limit=50))
 				logger.info("TG messages fetched=%d", len(msgs))
 				max_id = ch.last_message_id or 0
-				for m in reversed(msgs):
-					if m.id and m.id <= offset_id:
-						continue
-					# Track max_id early so skips still advance checkpoint
-					max_id = max(max_id, m.id or 0)
+			for m in reversed(msgs):
+				logger.info("TG processing msg id=%s offset_id=%s", m.id, offset_id)
+				if m.id and m.id <= offset_id:
+					logger.info("TG skip already seen id=%s", m.id)
+					continue
+				# Track max_id early so skips still advance checkpoint
+				max_id = max(max_id, m.id or 0)
+				logger.info("TG will process msg id=%s", m.id)
 					raw_text = (getattr(m, "text", None) or getattr(m, "message", None) or "")
 					html = _format_telegram_html(raw_text, getattr(m, "entities", None))
 					# Remove blocked links before filters/length checks
@@ -638,6 +641,7 @@ def fetch_telegram_channels() -> dict:
 							# Skip too-short per config (check rewritten/body)
 							effective_body = (rew.get("content") or orig_body) or ""
 							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
+								logger.info("TG min_chars skip url=%s len=%d min=%d", url, len((_strip_html_tags(effective_body) or effective_body)), min_chars)
 								skipped += 1
 								continue
 							# AI ad classifier (best-effort) after length/keyword checks
@@ -649,8 +653,9 @@ def fetch_telegram_channels() -> dict:
 									continue
 							except Exception:
 								pass
-						# Try to build image URL
-						img_url = ""
+					logger.info("TG passed all filters, building image url=%s", url)
+					# Try to build image URL
+					img_url = ""
 						try:
 							if ch.parse_images and getattr(m, "photo", None):
 								target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
@@ -729,6 +734,9 @@ def fetch_telegram_channels() -> dict:
 					except IntegrityError:
 						skipped += 1
 						logger.info("TG duplicate skip url=%s", url)
+					except Exception as msg_exc:
+						skipped += 1
+						logger.exception("TG message processing error url=%s: %s", url, msg_exc)
 				if max_id and max_id != (ch.last_message_id or 0):
 					ch.last_message_id = max_id
 					ch.save(update_fields=["last_message_id", "updated_at"])
