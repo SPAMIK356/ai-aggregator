@@ -116,7 +116,12 @@ CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "1") == "1"
 CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
 # CSRF / Hosts for production
-CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+_csrf_origins = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+# Also add PUBLIC_BASE_URL if set
+_pub_base = os.getenv("PUBLIC_BASE_URL", "").strip()
+if _pub_base and _pub_base not in _csrf_origins:
+    _csrf_origins.append(_pub_base)
+CSRF_TRUSTED_ORIGINS = _csrf_origins
 
 # Celery / Redis
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
