@@ -602,14 +602,14 @@ def fetch_telegram_channels() -> dict:
 				msgs = list(client.iter_messages(entity, limit=50))
 				logger.info("TG messages fetched=%d", len(msgs))
 				max_id = ch.last_message_id or 0
-			for m in reversed(msgs):
-				logger.info("TG processing msg id=%s offset_id=%s", m.id, offset_id)
-				if m.id and m.id <= offset_id:
-					logger.info("TG skip already seen id=%s", m.id)
-					continue
-				# Track max_id early so skips still advance checkpoint
-				max_id = max(max_id, m.id or 0)
-				logger.info("TG will process msg id=%s", m.id)
+				for m in reversed(msgs):
+					logger.info("TG processing msg id=%s offset_id=%s", m.id, offset_id)
+					if m.id and m.id <= offset_id:
+						logger.info("TG skip already seen id=%s", m.id)
+						continue
+					# Track max_id early so skips still advance checkpoint
+					max_id = max(max_id, m.id or 0)
+					logger.info("TG will process msg id=%s", m.id)
 					raw_text = (getattr(m, "text", None) or getattr(m, "message", None) or "")
 					html = _format_telegram_html(raw_text, getattr(m, "entities", None))
 					# Remove blocked links before filters/length checks
@@ -653,9 +653,9 @@ def fetch_telegram_channels() -> dict:
 									continue
 							except Exception:
 								pass
-					logger.info("TG passed all filters, building image url=%s", url)
-					# Try to build image URL
-					img_url = ""
+						logger.info("TG passed all filters, building image url=%s", url)
+						# Try to build image URL
+						img_url = ""
 						try:
 							if ch.parse_images and getattr(m, "photo", None):
 								target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
