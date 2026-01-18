@@ -142,7 +142,14 @@ def rewrite_article(title: str, content: str) -> Optional[Dict[str, object]]:
 			)
 			text = response.choices[0].message.content or "{}"
 			data = _lenient_json_parse(text) or {}
-			out: Dict[str, object] = {"title": data.get("title") or title, "content": data.get("content") or content}
+			out_title = data.get("title") or title
+			out_content = data.get("content") or content
+			# Convert literal \n sequences to actual newlines
+			if isinstance(out_title, str):
+				out_title = out_title.replace("\\n", "\n")
+			if isinstance(out_content, str):
+				out_content = out_content.replace("\\n", "\n")
+			out: Dict[str, object] = {"title": out_title, "content": out_content}
 			if isinstance(data.get("hashtags"), list):
 				out["hashtags"] = [str(s).strip().lower() for s in data.get("hashtags") if s]
 			theme_val = str(data.get("theme") or "").strip().upper()
@@ -472,6 +479,11 @@ def translate_to_russian(title: str, content: str) -> Optional[Dict[str, str]]:
 			data = _lenient_json_parse(text) or {}
 			title_ru = data.get("title_ru") or data.get("title") or ""
 			content_ru = data.get("content_ru") or data.get("content") or ""
+			# Convert literal \n sequences to actual newlines
+			if title_ru:
+				title_ru = title_ru.replace("\\n", "\n")
+			if content_ru:
+				content_ru = content_ru.replace("\\n", "\n")
 			if title_ru or content_ru:
 				return {"title_ru": title_ru, "content_ru": content_ru}
 		except BadRequestError as e:
@@ -492,6 +504,11 @@ def translate_to_russian(title: str, content: str) -> Optional[Dict[str, str]]:
 					data = _lenient_json_parse(text) or {}
 					title_ru = data.get("title_ru") or data.get("title") or ""
 					content_ru = data.get("content_ru") or data.get("content") or ""
+					# Convert literal \n sequences to actual newlines
+					if title_ru:
+						title_ru = title_ru.replace("\\n", "\n")
+					if content_ru:
+						content_ru = content_ru.replace("\\n", "\n")
 					if title_ru or content_ru:
 						return {"title_ru": title_ru, "content_ru": content_ru}
 				except Exception as e2:
@@ -510,6 +527,11 @@ def translate_to_russian(title: str, content: str) -> Optional[Dict[str, str]]:
 				data = _lenient_json_parse(text) or {}
 				title_ru = data.get("title_ru") or data.get("title") or ""
 				content_ru = data.get("content_ru") or data.get("content") or ""
+				# Convert literal \n sequences to actual newlines
+				if title_ru:
+					title_ru = title_ru.replace("\\n", "\n")
+				if content_ru:
+					content_ru = content_ru.replace("\\n", "\n")
 				if title_ru or content_ru:
 					return {"title_ru": title_ru, "content_ru": content_ru}
 			except Exception as e3:
