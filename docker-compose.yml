@@ -1,6 +1,20 @@
 version: "3.9"
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+      - backend
   postgres:
     image: postgres:16
     environment:
@@ -9,8 +23,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_password}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Port NOT exposed to internet - only accessible within Docker network
 
   redis:
     image: redis:7
@@ -32,8 +45,7 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Port NOT exposed to internet - only accessible within Docker network
 
   backend:
     build:
@@ -175,5 +187,6 @@ services:
 volumes:
   pgdata:
   redisdata:
-
+  caddy-data:
+  caddy-config:
 
