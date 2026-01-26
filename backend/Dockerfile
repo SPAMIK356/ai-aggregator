@@ -12,6 +12,6 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app
 
-CMD ["gunicorn", "ai_aggregator.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "ai_aggregator.wsgi:application", "--bind", "0.0.0.0:8000", "--timeout", "120"]
 
 
