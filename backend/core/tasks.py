@@ -99,6 +99,67 @@ def _strip_blocked_links(text: str) -> str:
 	return s
 
 
+def _get_today_post_counts() -> dict:
+	"""Get count of posts created today, both total and per source.
+	
+	Returns dict with:
+	- 'total': int - total posts created today
+	- 'by_source': dict[str, int] - posts per source_name
+	"""
+	from datetime import timedelta
+	today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+	
+	total = NewsItem.objects.filter(created_at__gte=today_start).count()
+	
+	# Count per source
+	from django.db.models import Count
+	by_source_qs = (
+		NewsItem.objects
+		.filter(created_at__gte=today_start)
+		.values('source_name')
+		.annotate(count=Count('id'))
+	)
+	by_source = {item['source_name']: item['count'] for item in by_source_qs}
+	
+	return {'total': total, 'by_source': by_source}
+
+
+def _check_daily_limits(cfg: Optional[ParserConfig], source_name: str) -> tuple[bool, str]:
+	"""Check if daily limits allow creating a new post.
+	
+	Args:
+		cfg: ParserConfig with limit settings
+		source_name: Name of the source for per-source limit check
+		
+	Returns:
+		Tuple of (allowed: bool, reason: str)
+		If allowed is False, reason explains why.
+	"""
+	if not cfg:
+		return True, ""
+	
+	max_total = int(getattr(cfg, 'max_posts_per_day', 0) or 0)
+	max_per_source = int(getattr(cfg, 'max_posts_per_source_per_day', 0) or 0)
+	
+	# No limits configured
+	if not max_total and not max_per_source:
+		return True, ""
+	
+	counts = _get_today_post_counts()
+	
+	# Check global daily limit
+	if max_total and counts['total'] >= max_total:
+		return False, f"daily_limit_total ({counts['total']}/{max_total})"
+	
+	# Check per-source daily limit
+	if max_per_source:
+		source_count = counts['by_source'].get(source_name, 0)
+		if source_count >= max_per_source:
+			return False, f"daily_limit_source ({source_count}/{max_per_source})"
+	
+	return True, ""
+
+
 def _to_plain_text(value: str) -> str:
 	"""Convert HTML/Markdown-rich text into plain text for Telegram.
 
@@ -338,6 +399,13 @@ def run_parser() -> dict:
 							continue
 					except Exception:
 						pass
+					# Check daily post limits
+					source_name = source.title or source.url
+					allowed, limit_reason = _check_daily_limits(cfg, source_name)
+					if not allowed:
+						logger.info("RSS %s skip url=%s", limit_reason, link)
+						skipped += 1
+						continue
 					# Pick theme from source.default_theme (fallback to AI)
 					theme_val = source.default_theme or NewsItem.Theme.AI
 					n = NewsItem.objects.create(
@@ -717,13 +785,20 @@ def fetch_telegram_channels() -> dict:
 								theme_val = t.strip().upper()
 						except Exception:
 							theme_val = None
+						# Check daily post limits
+						tg_source_name = ch.title or ch.username
+						allowed, limit_reason = _check_daily_limits(cfg, tg_source_name)
+						if not allowed:
+							logger.info("TG %s skip url=%s", limit_reason, url)
+							skipped += 1
+							continue
 						n = NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
 							description=(rew.get("content") or orig_body)[:10000],
 							image_url=img_url if not use_generated_image else "",
 							published_at=published_at,
-							source_name=ch.title or ch.username,
+							source_name=tg_source_name,
 							theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
 						)
 						# Generate image if enabled (best-effort)
@@ -920,6 +995,12 @@ def fetch_websites() -> dict:
 								theme_val = t.strip().upper()
 						except Exception:
 							theme_val = None
+						# Check daily post limits
+						allowed, limit_reason = _check_daily_limits(cfg, ws.name)
+						if not allowed:
+							logger.info("WEB %s skip url=%s", limit_reason, link)
+							skipped += 1
+							continue
 						n = NewsItem.objects.create(
 								title=(rew.get("title") or title or link)[:500],
 								original_url=link,

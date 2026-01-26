@@ -269,6 +269,51 @@ button, .pill, input[type="button"], input[type="submit"], input[type="reset"] {
 .drawer-sep { height: 1px; background: var(--border); margin: 10px 0; }
 .drawer-section { color: #cfd5df; font-weight: 700; margin-top: 6px; }
 
+/* Language switcher in drawer */
+.drawer-lang { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.lang-switch-mobile {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: linear-gradient(135deg, rgba(255,107,61,.12) 0%, rgba(255,43,80,.08) 100%);
+	border: 1px solid rgba(255,107,61,.3);
+	color: var(--text);
+	font-size: 15px;
+	text-decoration: none;
+	transition: border-color .2s, background .2s;
+}
+.lang-switch-mobile:hover {
+	border-color: var(--accent);
+	background: linear-gradient(135deg, rgba(255,107,61,.2) 0%, rgba(255,43,80,.14) 100%);
+	color: #fff;
+}
+.lang-switch-mobile .lang-icon { font-size: 18px; }
+
+/* Header language switcher */
+.lang-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: var(--bg-elev);
+	border: 1px solid var(--border);
+	color: var(--text);
+	font-size: 0.875rem;
+	text-decoration: none;
+	transition: background 0.2s, border-color 0.2s;
+}
+.lang-switch:hover {
+	border-color: var(--accent);
+	color: #fff;
+}
+/* Hide header language switcher on mobile (it's in burger menu instead) */
+@media (max-width: 1023px) {
+	.nav > .lang-switch { display: none; }
+}
+
 /* Lock body scroll and ensure solid overlay when menu is open */
 body.menu-open { overflow: hidden; }
 

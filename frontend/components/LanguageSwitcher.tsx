@@ -24,19 +24,6 @@ export default function LanguageSwitcher({ locale }: { locale: string }) {
       href={newPath}
       className="lang-switch"
       title={isRussian ? 'Switch to English' : 'Переключить на русский'}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        color: 'var(--text)',
-        fontSize: '0.875rem',
-        textDecoration: 'none',
-        transition: 'background 0.2s',
-      }}
     >
       <span style={{ opacity: isRussian ? 0.5 : 1 }}>EN</span>
       <span style={{ opacity: 0.5 }}>/</span>

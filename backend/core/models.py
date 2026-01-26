@@ -270,6 +270,16 @@ class ParserConfig(TimeStampedModel):
 	max_image_width = models.PositiveIntegerField(default=1280, help_text="Max image width in pixels (0 to disable)")
 	max_image_height = models.PositiveIntegerField(default=720, help_text="Max image height in pixels (0 to disable)")
 	image_quality = models.PositiveIntegerField(default=85, help_text="JPEG/WebP quality 1-95")
+	
+	# Daily post limits
+	max_posts_per_day = models.PositiveIntegerField(
+		default=0,
+		help_text="Maximum total posts per day across all sources (0 = unlimited)"
+	)
+	max_posts_per_source_per_day = models.PositiveIntegerField(
+		default=0,
+		help_text="Maximum posts per individual source per day (0 = unlimited)"
+	)
 
 	def __str__(self) -> str:
 		return f"Parser ({'on' if self.is_enabled else 'off'})"

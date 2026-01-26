@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
 
 type Locale = 'en' | 'ru';
 
@@ -20,6 +21,8 @@ const translations = {
         newsFilters: 'News filters',
         all: 'All',
         ai: 'AI',
+        language: 'Language',
+        switchLang: 'Переключить на русский',
     },
     ru: {
         menu: 'Меню',
@@ -35,14 +38,23 @@ const translations = {
         newsFilters: 'Фильтры новостей',
         all: 'Все',
         ai: 'ИИ',
+        language: 'Язык',
+        switchLang: 'Switch to English',
     },
 };
 
 export default function BurgerMenu({ locale = 'en' }: { locale?: Locale }) {
     const [open, setOpen] = React.useState(false);
     const [mounted, setMounted] = React.useState(false);
+    const pathname = usePathname();
     const t = translations[locale];
     const prefix = locale === 'ru' ? '/ru' : '';
+    
+    // Language switch path
+    const isRussian = locale === 'ru';
+    const langSwitchPath = isRussian 
+        ? (pathname.replace(/^\/ru/, '') || '/') 
+        : `/ru${pathname}`;
 
     React.useEffect(() => {
         setMounted(true);
@@ -78,6 +90,16 @@ export default function BurgerMenu({ locale = 'en' }: { locale?: Locale }) {
                             <form action={`${prefix}/search`} method="get">
                                 <input name="q" type="text" placeholder={t.search} aria-label={t.search} />
                             </form>
+                        </div>
+                        <div className="drawer-lang">
+                            <a 
+                                href={langSwitchPath} 
+                                className="lang-switch-mobile"
+                                title={t.switchLang}
+                            >
+                                <span className="lang-icon">🌐</span>
+                                <span>{isRussian ? 'English' : 'Русский'}</span>
+                            </a>
                         </div>
                         <nav className="drawer-nav">
                             <a href={`${prefix}/`} onClick={() => setOpen(false)} className="nav-button">{t.home}</a>

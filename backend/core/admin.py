@@ -185,8 +185,18 @@ class LinkFilterAdmin(admin.ModelAdmin):
 
 @admin.register(ParserConfig)
 class ParserConfigAdmin(admin.ModelAdmin):
-	list_display = ("is_enabled", "min_chars", "updated_at")
+	list_display = ("is_enabled", "min_chars", "max_posts_per_day", "max_posts_per_source_per_day", "updated_at")
 	readonly_fields = ("created_at", "updated_at")
+	fieldsets = (
+		(None, {"fields": ("is_enabled",)}),
+		("Content Filters", {"fields": ("min_chars",)}),
+		("Daily Limits", {
+			"fields": ("max_posts_per_day", "max_posts_per_source_per_day"),
+			"description": "Set to 0 for unlimited. Limits reset at midnight (server time)."
+		}),
+		("Image Settings", {"fields": ("max_image_width", "max_image_height", "image_quality")}),
+		("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+	)
 
 
 class HashtagAdminForm(forms.ModelForm):
