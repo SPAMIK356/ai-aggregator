@@ -282,6 +282,8 @@ def test_image_generation() -> dict:
     
     Returns a dict with status, message, and details about each step.
     """
+    import traceback
+    
     cfg = ImageGeneratorConfig.objects.order_by("-updated_at").first()
     
     if not cfg:
@@ -294,40 +296,49 @@ def test_image_generation() -> dict:
     if not openai_key:
         return {"status": "error", "message": "OpenAI API key not configured in environment (OPENAI_API_KEY)."}
     
+    status_note = ""
     if not cfg.is_enabled:
-        return {"status": "warning", "message": "Image generation is disabled. Testing anyway..."}
+        status_note = "⚠️ Note: Image generation is disabled. Testing anyway...\n\n"
     
     # Test with a sample article
     test_title = "AI Revolution: New Breakthrough in Machine Learning"
     test_content = "Scientists have developed a new algorithm that significantly improves neural network efficiency, potentially transforming how we approach complex computational problems."
     
+    # Step 1: Test prompt generation with OpenAI
     try:
-        # Step 1: Test prompt generation
         prompt = generate_image_prompt(test_title, test_content, cfg)
-        
-        if not prompt:
-            return {
-                "status": "error",
-                "message": "Failed to generate image prompt with OpenAI. Check your OpenAI API key and model settings."
-            }
-        
-        # Step 2: Test image generation
-        result = generate_image_with_fal(prompt, cfg)
-        
-        if result:
-            filename, content_file = result
-            size = len(content_file.read())
-            return {
-                "status": "success",
-                "message": f"✓ Image generation working!\n\nGenerated prompt: \"{prompt[:150]}...\"\n\nImage: {filename} ({size:,} bytes)",
-            }
-        else:
-            return {
-                "status": "error", 
-                "message": f"Prompt generated successfully: \"{prompt[:100]}...\"\n\nBut fal-ai image generation failed. Check your fal-ai API key and model."
-            }
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Image generation failed: {str(e)}"
+            "message": f"{status_note}❌ Step 1 FAILED: OpenAI prompt generation\n\nModel: {cfg.openai_model}\nError: {type(e).__name__}: {str(e)}\n\nTraceback:\n{traceback.format_exc()[-500:]}"
+        }
+    
+    if not prompt:
+        return {
+            "status": "error",
+            "message": f"{status_note}❌ Step 1 FAILED: OpenAI returned empty prompt\n\nModel: {cfg.openai_model}\nCheck your OpenAI API key and model settings.\n\nTip: Check backend logs for more details."
+        }
+    
+    step1_success = f"✅ Step 1 OK: OpenAI prompt generation\nModel: {cfg.openai_model}\nGenerated prompt: \"{prompt[:200]}{'...' if len(prompt) > 200 else ''}\"\n\n"
+    
+    # Step 2: Test image generation with fal-ai
+    try:
+        result = generate_image_with_fal(prompt, cfg)
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"{status_note}{step1_success}❌ Step 2 FAILED: fal-ai image generation\n\nModel: {cfg.fal_model}\nError: {type(e).__name__}: {str(e)}\n\nTraceback:\n{traceback.format_exc()[-500:]}"
+        }
+    
+    if result:
+        filename, content_file = result
+        size = len(content_file.read())
+        return {
+            "status": "success",
+            "message": f"{status_note}{step1_success}✅ Step 2 OK: fal-ai image generation\nModel: {cfg.fal_model}\nImage: {filename} ({size:,} bytes)\n\n🎉 Image generation is working!",
+        }
+    else:
+        return {
+            "status": "error", 
+            "message": f"{status_note}{step1_success}❌ Step 2 FAILED: fal-ai returned no image\n\nModel: {cfg.fal_model}\nCheck your fal-ai API key and model name.\n\nTip: Check backend logs for detailed error."
         }
