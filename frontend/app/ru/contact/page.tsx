@@ -1,9 +1,7 @@
 import React from 'react';
-import PageShell from '../../../components/PageShell';
 
 export default function RuContactPage() {
 	return (
-		<PageShell locale="ru">
 		<article className="prose">
   <header>
     <h1>Контакты</h1>
@@ -53,7 +51,6 @@ export default function RuContactPage() {
     <p>По вопросам партнёрства: <strong>info@2049.news</strong></p>
   </section>
 </article>
-		</PageShell>
 	);
 }
 
