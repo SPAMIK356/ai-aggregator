@@ -276,27 +276,39 @@ class ParserConfig(TimeStampedModel):
 
 
 class ImageGeneratorConfig(TimeStampedModel):
-	"""Admin-configurable settings for AI image generation using fal-ai.
+	"""Admin-configurable settings for AI image generation.
 
-	When enabled, parsed news items will use generated images instead of
-	images from the source. Uses fal-ai/nano-banana model.
+	Two-step process:
+	1. OpenAI generates an image prompt based on article content
+	2. fal-ai generates the actual image using that prompt
 	"""
 	is_enabled = models.BooleanField(default=False)
-	api_key = models.CharField(
+	
+	# fal-ai settings
+	fal_api_key = models.CharField(
 		max_length=255,
 		blank=True,
 		help_text="fal-ai API key (FAL_KEY)"
 	)
-	model = models.CharField(
+	fal_model = models.CharField(
 		max_length=128,
 		default="fal-ai/fast-sdxl",
-		help_text="Model to use (e.g. fal-ai/fast-sdxl, fal-ai/flux/schnell)"
+		help_text="fal-ai model for image generation (e.g. fal-ai/fast-sdxl, fal-ai/flux/schnell)"
 	)
-	prompt_template = models.TextField(
+	
+	# OpenAI settings for prompt generation
+	openai_model = models.CharField(
+		max_length=64,
+		default="gpt-4o-mini",
+		help_text="OpenAI model for generating image prompts"
+	)
+	prompt_generator_instructions = models.TextField(
 		blank=True,
-		help_text="Prompt template for image generation. Use {title} and {content} as placeholders. "
-		          "Example: 'A professional news illustration for: {title}'"
+		help_text="System instructions for OpenAI to generate image prompts. "
+		          "The AI will receive article title and content, and should return a detailed image prompt."
 	)
+	
+	# Image settings
 	negative_prompt = models.TextField(
 		blank=True,
 		help_text="Negative prompt to avoid unwanted elements in generated images"

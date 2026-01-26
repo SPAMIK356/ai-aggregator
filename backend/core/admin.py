@@ -139,11 +139,12 @@ class TranslatorConfigAdmin(admin.ModelAdmin):
 
 @admin.register(ImageGeneratorConfig)
 class ImageGeneratorConfigAdmin(admin.ModelAdmin):
-	list_display = ("is_enabled", "model", "aspect_ratio", "updated_at")
+	list_display = ("is_enabled", "openai_model", "fal_model", "aspect_ratio", "updated_at")
 	fieldsets = (
-		(None, {"fields": ("is_enabled", "api_key", "model")}),
-		("Prompt Settings", {"fields": ("prompt_template", "negative_prompt")}),
-		("Image Settings", {"fields": ("aspect_ratio", "num_inference_steps")}),
+		(None, {"fields": ("is_enabled",)}),
+		("OpenAI Settings (Prompt Generation)", {"fields": ("openai_model", "prompt_generator_instructions")}),
+		("fal-ai Settings (Image Generation)", {"fields": ("fal_api_key", "fal_model")}),
+		("Image Settings", {"fields": ("negative_prompt", "aspect_ratio", "num_inference_steps")}),
 	)
 	change_form_template = "admin/image_generator_change_form.html"
 

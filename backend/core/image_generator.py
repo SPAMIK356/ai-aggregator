@@ -1,17 +1,18 @@
-"""AI image generation using fal-ai API.
+"""AI image generation using OpenAI for prompt generation + fal-ai for image creation.
 
-When ImageGeneratorConfig is enabled, this module generates images for news items
-instead of using images from the parsed sources.
+Two-step process:
+1. OpenAI generates an optimized image prompt based on article content
+2. fal-ai generates the actual image using that prompt
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
 import requests
-from io import BytesIO
 from typing import Optional, Tuple
-from pathlib import Path
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 
 from .models import ImageGeneratorConfig
@@ -27,48 +28,112 @@ ASPECT_RATIO_DIMENSIONS = {
     "portrait_4_3": {"width": 896, "height": 1152},
 }
 
+DEFAULT_PROMPT_INSTRUCTIONS = """You are an expert at creating prompts for AI image generation.
+Given a news article title and content, generate a detailed, descriptive prompt for creating 
+a professional illustration that captures the essence of the article.
+
+Requirements:
+- The prompt should be 1-3 sentences, detailed and specific
+- Focus on visual elements, style, mood, and composition
+- Use professional, modern aesthetic suitable for a tech news website
+- Avoid text, logos, watermarks, or specific brand references
+- The image should be abstract/conceptual rather than literal news photos
+
+Return ONLY the image generation prompt, nothing else."""
+
 
 def get_active_image_generator_config() -> Optional[ImageGeneratorConfig]:
-    """Get the active image generator config if enabled."""
+    """Get the active image generator config if enabled and properly configured."""
     cfg = ImageGeneratorConfig.objects.order_by("-updated_at").first()
-    return cfg if cfg and cfg.is_enabled and cfg.api_key else None
+    if not cfg or not cfg.is_enabled:
+        return None
+    if not cfg.fal_api_key:
+        return None
+    # OpenAI API key comes from settings
+    if not getattr(settings, "OPENAI_API_KEY", None):
+        return None
+    return cfg
 
 
-def generate_image_for_article(
-    title: str,
-    content: str,
-    save_path: Optional[str] = None,
-) -> Optional[Tuple[str, ContentFile]]:
-    """Generate an image for the given article using fal-ai.
-
+def generate_image_prompt(title: str, content: str, cfg: ImageGeneratorConfig) -> Optional[str]:
+    """Use OpenAI to generate an optimized image prompt based on article content.
+    
     Args:
         title: Article title
         content: Article content/description
-        save_path: Optional path hint for the saved file
-
+        cfg: ImageGeneratorConfig with OpenAI settings
+        
     Returns:
-        Tuple of (filename, ContentFile) if successful, None otherwise.
+        Generated image prompt string, or None on failure
     """
-    cfg = get_active_image_generator_config()
-    if not cfg:
-        return None
-
-    # Build the prompt from template
-    prompt_template = cfg.prompt_template or (
-        "Professional digital illustration for a tech news article. "
-        "Topic: {title}. Style: modern, clean, corporate, high quality. "
-        "No text, no watermarks, no logos."
-    )
+    from openai import OpenAI, BadRequestError, APITimeoutError, RateLimitError
     
-    try:
-        prompt = prompt_template.format(
-            title=title[:200],  # Limit title length
-            content=(content[:500] if content else "")  # Limit content length
-        )
-    except KeyError:
-        # If template has invalid placeholders, use title only
-        prompt = f"Professional digital illustration for a tech news article about: {title[:200]}"
+    api_key = getattr(settings, "OPENAI_API_KEY", None)
+    if not api_key:
+        logger.warning("OpenAI API key not configured")
+        return None
+    
+    base_url = getattr(settings, "OPENAI_BASE_URL", None)
+    
+    system_prompt = cfg.prompt_generator_instructions or DEFAULT_PROMPT_INSTRUCTIONS
+    
+    user_content = f"""Article Title: {title[:300]}
 
+Article Content: {content[:1500] if content else 'No additional content'}
+
+Generate an image prompt for this article:"""
+
+    max_attempts = 3
+    backoff = 2.0
+    last_error: Optional[Exception] = None
+    
+    for attempt in range(max_attempts):
+        try:
+            timeout = 30.0 * (attempt + 1)
+            client = OpenAI(api_key=api_key, timeout=timeout, max_retries=0, base_url=base_url)
+            
+            response = client.chat.completions.create(
+                model=cfg.openai_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                max_tokens=200,
+                temperature=0.7,
+            )
+            
+            prompt = (response.choices[0].message.content or "").strip()
+            if prompt:
+                logger.info("Generated image prompt: %s", prompt[:100])
+                return prompt
+                
+        except BadRequestError as e:
+            logger.warning("OpenAI BadRequest for prompt generation: %s", e)
+            last_error = e
+        except (APITimeoutError, RateLimitError) as e:
+            logger.warning("OpenAI transient error (attempt %d): %s", attempt + 1, e)
+            last_error = e
+        except Exception as e:
+            logger.exception("OpenAI unexpected error: %s", e)
+            last_error = e
+        
+        if attempt < max_attempts - 1:
+            time.sleep(backoff * (2 ** attempt))
+    
+    logger.error("Prompt generation failed after %d attempts: %s", max_attempts, last_error)
+    return None
+
+
+def generate_image_with_fal(prompt: str, cfg: ImageGeneratorConfig) -> Optional[Tuple[str, ContentFile]]:
+    """Generate image using fal-ai with the given prompt.
+    
+    Args:
+        prompt: The image generation prompt (from OpenAI)
+        cfg: ImageGeneratorConfig with fal-ai settings
+        
+    Returns:
+        Tuple of (filename, ContentFile) if successful, None otherwise
+    """
     # Get dimensions for aspect ratio
     dimensions = ASPECT_RATIO_DIMENSIONS.get(
         cfg.aspect_ratio, 
@@ -76,10 +141,10 @@ def generate_image_for_article(
     )
 
     # fal-ai API endpoint
-    api_url = f"https://fal.run/{cfg.model}"
+    api_url = f"https://fal.run/{cfg.fal_model}"
     
     headers = {
-        "Authorization": f"Key {cfg.api_key}",
+        "Authorization": f"Key {cfg.fal_api_key}",
         "Content-Type": "application/json",
     }
     
@@ -95,23 +160,19 @@ def generate_image_for_article(
     if cfg.negative_prompt:
         payload["negative_prompt"] = cfg.negative_prompt
 
-    # Retry logic with backoff
     max_attempts = 3
     backoff = 2.0
     last_error: Optional[Exception] = None
 
     for attempt in range(max_attempts):
         try:
-            logger.info(
-                "Generating image (attempt %d/%d) for: %s",
-                attempt + 1, max_attempts, title[:50]
-            )
+            logger.info("Generating image with fal-ai (attempt %d/%d)", attempt + 1, max_attempts)
             
             response = requests.post(
                 api_url,
                 headers=headers,
                 json=payload,
-                timeout=120,  # Image generation can take time
+                timeout=120,
             )
             
             if response.status_code == 200:
@@ -138,40 +199,26 @@ def generate_image_for_article(
                 # Download the image
                 img_response = requests.get(image_url, timeout=30)
                 if img_response.status_code != 200:
-                    logger.warning(
-                        "Failed to download generated image: %d",
-                        img_response.status_code
-                    )
+                    logger.warning("Failed to download generated image: %d", img_response.status_code)
                     continue
                 
                 # Determine filename
                 content_type = img_response.headers.get("content-type", "image/png")
                 ext = "png" if "png" in content_type else "jpg"
-                
-                # Generate a safe filename from title
-                safe_title = "".join(
-                    c if c.isalnum() or c in "-_" else "_" 
-                    for c in title[:50]
-                ).strip("_")
-                filename = f"generated_{safe_title}_{int(time.time())}.{ext}"
+                filename = f"generated_{int(time.time())}.{ext}"
                 
                 # Create ContentFile
                 content_file = ContentFile(img_response.content, name=filename)
                 
-                logger.info("Successfully generated image: %s", filename)
+                logger.info("Successfully generated image: %s (%d bytes)", filename, len(img_response.content))
                 return (filename, content_file)
                 
             elif response.status_code == 429:
-                # Rate limited
                 logger.warning("fal-ai rate limited, backing off...")
                 time.sleep(backoff * (2 ** attempt))
                 continue
             else:
-                logger.warning(
-                    "fal-ai API error %d: %s",
-                    response.status_code,
-                    response.text[:500]
-                )
+                logger.warning("fal-ai API error %d: %s", response.status_code, response.text[:500])
                 last_error = Exception(f"API error {response.status_code}")
                 
         except requests.Timeout:
@@ -184,15 +231,44 @@ def generate_image_for_article(
             logger.exception("Unexpected error in image generation: %s", e)
             last_error = e
         
-        # Backoff before retry
         if attempt < max_attempts - 1:
             time.sleep(backoff * (2 ** attempt))
 
-    logger.error(
-        "Image generation failed after %d attempts: %s",
-        max_attempts, last_error
-    )
+    logger.error("Image generation failed after %d attempts: %s", max_attempts, last_error)
     return None
+
+
+def generate_image_for_article(
+    title: str,
+    content: str,
+) -> Optional[Tuple[str, ContentFile]]:
+    """Generate an image for the given article using OpenAI + fal-ai.
+
+    Two-step process:
+    1. OpenAI generates an optimized image prompt
+    2. fal-ai generates the actual image
+    
+    Args:
+        title: Article title
+        content: Article content/description
+
+    Returns:
+        Tuple of (filename, ContentFile) if successful, None otherwise.
+    """
+    cfg = get_active_image_generator_config()
+    if not cfg:
+        return None
+
+    # Step 1: Generate prompt with OpenAI
+    logger.info("Generating image prompt for: %s", title[:50])
+    prompt = generate_image_prompt(title, content, cfg)
+    
+    if not prompt:
+        logger.warning("Failed to generate image prompt, skipping image generation")
+        return None
+    
+    # Step 2: Generate image with fal-ai
+    return generate_image_with_fal(prompt, cfg)
 
 
 def should_generate_image() -> bool:
@@ -204,41 +280,54 @@ def should_generate_image() -> bool:
 def test_image_generation() -> dict:
     """Test image generation with a sample prompt.
     
-    Returns a dict with status, message, and optionally image_url on success.
+    Returns a dict with status, message, and details about each step.
     """
     cfg = ImageGeneratorConfig.objects.order_by("-updated_at").first()
     
     if not cfg:
         return {"status": "error", "message": "No ImageGeneratorConfig found. Please create one first."}
     
-    if not cfg.api_key:
-        return {"status": "error", "message": "API key is not configured."}
+    if not cfg.fal_api_key:
+        return {"status": "error", "message": "fal-ai API key is not configured."}
+    
+    openai_key = getattr(settings, "OPENAI_API_KEY", None)
+    if not openai_key:
+        return {"status": "error", "message": "OpenAI API key not configured in environment (OPENAI_API_KEY)."}
     
     if not cfg.is_enabled:
-        return {"status": "warning", "message": "Image generation is disabled. Enable it to use in production."}
+        return {"status": "warning", "message": "Image generation is disabled. Testing anyway..."}
     
     # Test with a sample article
     test_title = "AI Revolution: New Breakthrough in Machine Learning"
-    test_content = "Scientists have developed a new algorithm that significantly improves neural network efficiency."
+    test_content = "Scientists have developed a new algorithm that significantly improves neural network efficiency, potentially transforming how we approach complex computational problems."
     
     try:
-        result = generate_image_for_article(test_title, test_content)
+        # Step 1: Test prompt generation
+        prompt = generate_image_prompt(test_title, test_content, cfg)
+        
+        if not prompt:
+            return {
+                "status": "error",
+                "message": "Failed to generate image prompt with OpenAI. Check your OpenAI API key and model settings."
+            }
+        
+        # Step 2: Test image generation
+        result = generate_image_with_fal(prompt, cfg)
         
         if result:
             filename, content_file = result
-            # Don't actually save the test image, just report success
+            size = len(content_file.read())
             return {
                 "status": "success",
-                "message": f"Image generation working! Generated test image: {filename} ({len(content_file.read())} bytes)",
+                "message": f"✓ Image generation working!\n\nGenerated prompt: \"{prompt[:150]}...\"\n\nImage: {filename} ({size:,} bytes)",
             }
         else:
             return {
                 "status": "error", 
-                "message": "Image generation returned no result. Check logs for details."
+                "message": f"Prompt generated successfully: \"{prompt[:100]}...\"\n\nBut fal-ai image generation failed. Check your fal-ai API key and model."
             }
     except Exception as e:
         return {
             "status": "error",
             "message": f"Image generation failed: {str(e)}"
         }
-
