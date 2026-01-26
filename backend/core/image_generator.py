@@ -92,15 +92,26 @@ Generate an image prompt for this article:"""
             timeout = 30.0 * (attempt + 1)
             client = OpenAI(api_key=api_key, timeout=timeout, max_retries=0, base_url=base_url)
             
-            response = client.chat.completions.create(
-                model=cfg.openai_model,
-                messages=[
+            # Newer models (gpt-4o, o1, etc.) require max_completion_tokens instead of max_tokens
+            model_lower = cfg.openai_model.lower()
+            use_new_param = any(m in model_lower for m in ["gpt-4o", "o1-", "o3-"])
+            
+            completion_kwargs = {
+                "model": cfg.openai_model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content},
                 ],
-                max_tokens=200,
-                temperature=0.7,
-            )
+            }
+            
+            # Add token limit with appropriate parameter name
+            if use_new_param:
+                completion_kwargs["max_completion_tokens"] = 200
+            else:
+                completion_kwargs["max_tokens"] = 200
+                completion_kwargs["temperature"] = 0.7
+            
+            response = client.chat.completions.create(**completion_kwargs)
             
             prompt = (response.choices[0].message.content or "").strip()
             if prompt:
