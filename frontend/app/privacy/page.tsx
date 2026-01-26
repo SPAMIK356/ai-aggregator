@@ -92,8 +92,8 @@ export default function PrivacyPage() {
     <div>
       <h2>Contact Information</h2>
       <ul>
-        <li><strong>Email:</strong> 2049.news@gmail.com</li>
-        <li><strong>Address:</strong> 251 S Lake Ave, Ste 800, Pasadena, CA 91101, USA</li>
+        <li><strong>Email:</strong> info@2049.news</li>
+        <li><strong>Address:</strong> Unit 2118, JLT, Cluster X, DMCC, Dubai, UAE</li>
       </ul>
     </div>
   </section>

@@ -38,7 +38,7 @@ export default function AboutPage() {
 
   <section>
     <h2>Editorial Contact</h2>
-    <p>2049.news@gmail.com <span>Editorial Team</span></p>
+    <p>info@2049.news <span>Editorial Team</span></p>
   </section>
 </article>
 

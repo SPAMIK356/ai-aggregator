@@ -71,7 +71,7 @@ export default function TermsPage() {
   <section>
     <div>
       <h2>Governing Law</h2>
-      <p>These Terms are governed by and construed in accordance with the laws of the United States of America and the State of California, without regard to conflict of law principles.</p>
+      <p>These Terms are governed by and construed in accordance with the laws of the United Arab Emirates and the Emirate of Dubai, without regard to conflict of law principles.</p>
     </div>
   </section>
 
@@ -79,8 +79,8 @@ export default function TermsPage() {
     <div>
       <h2>Contact Information</h2>
       <ul>
-        <li><strong>Email:</strong> 2049.news@gmail.com</li>
-        <li><strong>Address:</strong> 251 S Lake Ave, Ste 800, Pasadena, CA 91101, USA</li>
+        <li><strong>Email:</strong> info@2049.news</li>
+        <li><strong>Address:</strong> Unit 2118, JLT, Cluster X, DMCC, Dubai, UAE</li>
       </ul>
     </div>
   </section>

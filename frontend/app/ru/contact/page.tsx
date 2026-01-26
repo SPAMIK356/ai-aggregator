@@ -1,17 +1,24 @@
 import React from 'react';
+import PageShell from '../../../components/PageShell';
 
 export default function RuContactPage() {
 	return (
+		<PageShell locale="ru">
 		<article className="prose">
   <header>
     <h1>Контакты</h1>
-    <p><strong>Напишите нам:</strong> 2049.news@gmail.com</p>
+    <p><strong>Напишите нам:</strong> info@2049.news</p>
     <p>Мы открыты к сотрудничеству, партнёрским предложениям, обмену контентом и совместным публикациям. Если у вас есть идеи, новости, аналитические материалы или проекты для нашей аудитории — свяжитесь с нами.</p>
   </header>
 
   <section>
+    <h2>📬 Адрес</h2>
+    <p>Unit 2118, JLT, Cluster X, DMCC, Dubai, UAE</p>
+  </section>
+
+  <section>
     <h2>📩 Отправить статью</h2>
-    <p>Отправьте ваш материал на <strong>2049.news.articles@gmail.com</strong> с темой письма: <span>Заявка на публикацию — [Название материала]</span></p>
+    <p>Отправьте ваш материал на <strong>info@2049.news</strong> с темой письма: <span>Заявка на публикацию — [Название материала]</span></p>
     <p>Укажите в письме:</p>
     <ul>
       <li>Название статьи</li>
@@ -43,10 +50,10 @@ export default function RuContactPage() {
       <li>Обмен контентом и репосты</li>
       <li>Специальные проекты и рекламные интеграции</li>
     </ul>
-    <p>По вопросам партнёрства: <strong>2049.news.partners@gmail.com</strong></p>
+    <p>По вопросам партнёрства: <strong>info@2049.news</strong></p>
   </section>
 </article>
-
+		</PageShell>
 	);
 }
 

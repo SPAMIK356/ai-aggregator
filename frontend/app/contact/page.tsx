@@ -7,13 +7,18 @@ export default function ContactPage() {
 		<article className="prose">
   <header>
     <h1>Contacts</h1>
-    <p><strong>Write to us:</strong> 2049.news@gmail.com</p>
-    <p>We’re open to collaboration, partnership proposals, content exchange, and joint publications. If you have ideas, news, analytical materials, or projects for our audience — reach out.</p>
+    <p><strong>Write to us:</strong> info@2049.news</p>
+    <p>We're open to collaboration, partnership proposals, content exchange, and joint publications. If you have ideas, news, analytical materials, or projects for our audience — reach out.</p>
   </header>
 
   <section>
+    <h2>📬 Address</h2>
+    <p>Unit 2118, JLT, Cluster X, DMCC, Dubai, UAE</p>
+  </section>
+
+  <section>
     <h2>📩 Submit an Article</h2>
-    <p>Send your material to <strong>2049.news.articles@gmail.com</strong> with the subject line: <span>Article Submission — [Title of the Material]</span></p>
+    <p>Send your material to <strong>info@2049.news</strong> with the subject line: <span>Article Submission — [Title of the Material]</span></p>
     <p>Include in your email:</p>
     <ul>
       <li>Article title</li>
@@ -45,7 +50,7 @@ export default function ContactPage() {
       <li>Content exchange and reposts</li>
       <li>Special projects and advertising integrations</li>
     </ul>
-    <p>For partnership inquiries: <strong>2049.news.partners@gmail.com</strong></p>
+    <p>For partnership inquiries: <strong>info@2049.news</strong></p>
   </section>
 </article>
 		</PageShell>
