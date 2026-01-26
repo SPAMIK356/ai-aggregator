@@ -1,7 +1,9 @@
 import React from 'react';
+import PageShell from '../../components/PageShell';
 
 export default function TermsPage() {
 	return (
+		<PageShell locale="en">
 		<article className="prose">
   <header>
     <h1>Terms of Use</h1>
@@ -85,7 +87,7 @@ export default function TermsPage() {
     </div>
   </section>
 </article>
-
+		</PageShell>
 	);
 }
 

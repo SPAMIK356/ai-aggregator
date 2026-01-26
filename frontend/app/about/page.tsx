@@ -1,7 +1,9 @@
 import React from 'react';
+import PageShell from '../../components/PageShell';
 
 export default function AboutPage() {
 	return (
+		<PageShell locale="en">
 		<article className="prose">
   <header>
     <h1>About Us</h1>
@@ -41,7 +43,7 @@ export default function AboutPage() {
     <p>info@2049.news <span>Editorial Team</span></p>
   </section>
 </article>
-
+		</PageShell>
 	);
 }
 
