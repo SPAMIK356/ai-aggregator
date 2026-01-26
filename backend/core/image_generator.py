@@ -98,8 +98,6 @@ Generate an image prompt for this article:"""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content},
                 ],
-                # Use max_completion_tokens (newer API standard, works with gpt-4o, o1, o3, etc.)
-                max_completion_tokens=200,
             )
             
             prompt = (response.choices[0].message.content or "").strip()
