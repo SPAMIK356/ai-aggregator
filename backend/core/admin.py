@@ -13,6 +13,7 @@ from .models import (
 	TelegramRewriterConfig,
 	AdClassifierConfig,
 	TranslatorConfig,
+	ImageGeneratorConfig,
 	KeywordFilter,
 	ParserConfig,
 	SitePage,
@@ -134,6 +135,35 @@ class AdClassifierConfigAdmin(admin.ModelAdmin):
 @admin.register(TranslatorConfig)
 class TranslatorConfigAdmin(admin.ModelAdmin):
 	list_display = ("is_enabled", "model", "updated_at")
+
+
+@admin.register(ImageGeneratorConfig)
+class ImageGeneratorConfigAdmin(admin.ModelAdmin):
+	list_display = ("is_enabled", "model", "aspect_ratio", "updated_at")
+	fieldsets = (
+		(None, {"fields": ("is_enabled", "api_key", "model")}),
+		("Prompt Settings", {"fields": ("prompt_template", "negative_prompt")}),
+		("Image Settings", {"fields": ("aspect_ratio", "num_inference_steps")}),
+	)
+	change_form_template = "admin/image_generator_change_form.html"
+
+	def get_urls(self):
+		from django.urls import path
+		urls = super().get_urls()
+		custom_urls = [
+			path(
+				"test-generation/",
+				self.admin_site.admin_view(self.test_generation_view),
+				name="core_imagegeneratorconfig_test",
+			),
+		]
+		return custom_urls + urls
+
+	def test_generation_view(self, request):
+		from django.http import JsonResponse
+		from .image_generator import test_image_generation
+		result = test_image_generation()
+		return JsonResponse(result)
 
 
 @admin.register(KeywordFilter)

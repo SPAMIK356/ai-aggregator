@@ -1,0 +1,123 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block after_related_objects %}
+{{ block.super }}
+
+<style>
+.test-generation-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.test-generation-section h3 {
+    margin-top: 0;
+    color: #333;
+}
+.test-btn {
+    background: #417690;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.test-btn:hover {
+    background: #205067;
+}
+.test-btn:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+.test-result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    display: none;
+}
+.test-result.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+.test-result.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+.test-result.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+}
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<div class="test-generation-section">
+    <h3>🧪 Test Image Generation</h3>
+    <p>Click the button below to test if image generation is working correctly with your current settings.</p>
+    <button type="button" class="test-btn" id="testGenerationBtn" onclick="testGeneration()">
+        Test Generation
+    </button>
+    <div id="testResult" class="test-result"></div>
+</div>
+
+<script>
+function testGeneration() {
+    const btn = document.getElementById('testGenerationBtn');
+    const resultDiv = document.getElementById('testResult');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Testing...';
+    resultDiv.style.display = 'none';
+    resultDiv.className = 'test-result';
+    
+    fetch('{% url "admin:core_imagegeneratorconfig_test" %}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = 'Test Generation';
+        
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result ' + data.status;
+        
+        let icon = '❓';
+        if (data.status === 'success') icon = '✅';
+        else if (data.status === 'error') icon = '❌';
+        else if (data.status === 'warning') icon = '⚠️';
+        
+        resultDiv.innerHTML = icon + ' ' + data.message;
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = 'Test Generation';
+        
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result error';
+        resultDiv.innerHTML = '❌ Request failed: ' + error.message;
+    });
+}
+</script>
+{% endblock %}
+

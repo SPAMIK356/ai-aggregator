@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 import re
 from html import escape
 from .rewriter import rewrite_article, is_ad_content, translate_to_russian
+from .image_generator import generate_image_for_article, should_generate_image
 import json
 try:
 	from telegram import Bot, ParseMode
@@ -347,6 +348,16 @@ def run_parser() -> dict:
 						source_name=source.title or source.url,
 						theme=theme_val,
 					)
+					# Generate image if enabled (best-effort)
+					try:
+						if should_generate_image():
+							gen_result = generate_image_for_article(n.title, n.description)
+							if gen_result:
+								filename, content_file = gen_result
+								n.image_file.save(filename, content_file, save=True)
+								logger.info("RSS generated image for url=%s", link)
+					except Exception:
+						logger.exception("RSS image generation failed url=%s", link)
 					# Translate to Russian (best-effort)
 					try:
 						tr = translate_to_russian(n.title, n.description)
@@ -654,10 +665,15 @@ def fetch_telegram_channels() -> dict:
 							except Exception:
 								pass
 						logger.info("TG passed all filters, building image url=%s", url)
-						# Try to build image URL
+						# Try to build image URL or generate one
 						img_url = ""
-						try:
-							if ch.parse_images and getattr(m, "photo", None):
+						img_file_saved = False
+						# Check if we should generate images instead of parsing them
+						use_generated_image = should_generate_image()
+						if use_generated_image:
+							logger.info("TG will generate image for url=%s", url)
+						elif ch.parse_images and getattr(m, "photo", None):
+							try:
 								target_dir = Path(getattr(settings, "MEDIA_ROOT", Path("media"))) / "telegram" / ch.username.lstrip("@")
 								target_dir.mkdir(parents=True, exist_ok=True)
 								saved = client.download_media(m, file=str(target_dir))
@@ -685,12 +701,12 @@ def fetch_telegram_channels() -> dict:
 								media_url = getattr(settings, "MEDIA_URL", "/media/")
 								img_url = f"{media_url}{rel.as_posix()}"
 								logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
-						except Exception:
-							# If anything fails, fall back to t.me permalink
-							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-							logger.exception("TG image download failed; using permalink url=%s", img_url)
+							except Exception:
+								# If anything fails, fall back to t.me permalink
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+								logger.exception("TG image download failed; using permalink url=%s", img_url)
 						# Final fallback if no local image was produced but message includes a photo entity
-						if ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
+						if not use_generated_image and ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
 							logger.info("TG image fallback to permalink url=%s", img_url)
 						# Determine theme: use AI output if present else channel default else AI
@@ -705,11 +721,21 @@ def fetch_telegram_channels() -> dict:
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
 							description=(rew.get("content") or orig_body)[:10000],
-							image_url=img_url,
+							image_url=img_url if not use_generated_image else "",
 							published_at=published_at,
 							source_name=ch.title or ch.username,
 							theme=(theme_val or ch.default_theme or NewsItem.Theme.AI),
 						)
+						# Generate image if enabled (best-effort)
+						if use_generated_image:
+							try:
+								gen_result = generate_image_for_article(n.title, n.description)
+								if gen_result:
+									filename, content_file = gen_result
+									n.image_file.save(filename, content_file, save=True)
+									logger.info("TG generated image for url=%s", url)
+							except Exception:
+								logger.exception("TG image generation failed url=%s", url)
 						# Attach hashtags if provided and valid
 						try:
 							tags = rew.get("hashtags") if isinstance(rew, dict) else None
@@ -844,7 +870,10 @@ def fetch_websites() -> dict:
 						except Exception:
 							pass
 						img = ""
-						if ws.parse_images and ws.image_selector:
+						use_generated_image = should_generate_image()
+						if use_generated_image:
+							logger.info("WEB will generate image for url=%s", link)
+						elif ws.parse_images and ws.image_selector:
 							img_el = c.select_one(ws.image_selector)
 							if img_el and (img_el.get('src') or img_el.get('data-src')):
 								img = img_el.get('src') or img_el.get('data-src')
@@ -895,11 +924,21 @@ def fetch_websites() -> dict:
 								title=(rew.get("title") or title or link)[:500],
 								original_url=link,
 								description=(rew.get("content") or desc or "")[:10000],
-								image_url=img,
+								image_url=img if not use_generated_image else "",
 								published_at=timezone.now(),
 								source_name=ws.name,
 								theme=(theme_val or ws.default_theme or NewsItem.Theme.AI),
 							)
+						# Generate image if enabled (best-effort)
+						if use_generated_image:
+							try:
+								gen_result = generate_image_for_article(n.title, n.description)
+								if gen_result:
+									filename, content_file = gen_result
+									n.image_file.save(filename, content_file, save=True)
+									logger.info("WEB generated image for url=%s", link)
+							except Exception:
+								logger.exception("WEB image generation failed url=%s", link)
 						# Attach hashtags if provided and valid
 						try:
 							tags = rew.get("hashtags") if isinstance(rew, dict) else None

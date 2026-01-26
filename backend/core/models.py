@@ -275,6 +275,55 @@ class ParserConfig(TimeStampedModel):
 		return f"Parser ({'on' if self.is_enabled else 'off'})"
 
 
+class ImageGeneratorConfig(TimeStampedModel):
+	"""Admin-configurable settings for AI image generation using fal-ai.
+
+	When enabled, parsed news items will use generated images instead of
+	images from the source. Uses fal-ai/nano-banana model.
+	"""
+	is_enabled = models.BooleanField(default=False)
+	api_key = models.CharField(
+		max_length=255,
+		blank=True,
+		help_text="fal-ai API key (FAL_KEY)"
+	)
+	model = models.CharField(
+		max_length=128,
+		default="fal-ai/fast-sdxl",
+		help_text="Model to use (e.g. fal-ai/fast-sdxl, fal-ai/flux/schnell)"
+	)
+	prompt_template = models.TextField(
+		blank=True,
+		help_text="Prompt template for image generation. Use {title} and {content} as placeholders. "
+		          "Example: 'A professional news illustration for: {title}'"
+	)
+	negative_prompt = models.TextField(
+		blank=True,
+		help_text="Negative prompt to avoid unwanted elements in generated images"
+	)
+
+	class AspectRatio(models.TextChoices):
+		SQUARE = "square", "Square (1:1)"
+		LANDSCAPE = "landscape_16_9", "Landscape (16:9)"
+		LANDSCAPE_4_3 = "landscape_4_3", "Landscape (4:3)"
+		PORTRAIT = "portrait_16_9", "Portrait (9:16)"
+		PORTRAIT_4_3 = "portrait_4_3", "Portrait (3:4)"
+
+	aspect_ratio = models.CharField(
+		max_length=32,
+		choices=AspectRatio.choices,
+		default=AspectRatio.LANDSCAPE,
+		help_text="Aspect ratio for generated images"
+	)
+	num_inference_steps = models.PositiveIntegerField(
+		default=4,
+		help_text="Number of inference steps (higher = better quality, slower)"
+	)
+
+	def __str__(self) -> str:
+		return f"Image Generator ({'on' if self.is_enabled else 'off'})"
+
+
 class SitePage(TimeStampedModel):
 	"""Simple CMS-like page content by slug (e.g., footer, about, contact)."""
 	slug = models.SlugField(max_length=64, unique=True)
