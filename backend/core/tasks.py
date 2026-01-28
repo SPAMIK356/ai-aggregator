@@ -514,6 +514,16 @@ def deliver_outbox() -> dict:
 						continue
 					except Exception:
 						pass
+					# If image generation is enabled, give it time to finish before delivery
+					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED and should_generate_image():
+						if not img:
+							age_seconds = (timezone.now() - event.created_at).total_seconds()
+							if age_seconds < 300:
+								event.delivery_attempts += 1
+								event.last_error = f"Waiting for generated image ({int(age_seconds)}s)"
+								event.save(update_fields=["delivery_attempts", "last_error"])
+								skipped += 1
+								continue
 					# Optionally rewrite specifically for Telegram if enabled
 					try:
 						from .rewriter import get_active_telegram_config, rewrite_article_tg
@@ -769,10 +779,10 @@ def fetch_telegram_channels() -> dict:
 								media_url = getattr(settings, "MEDIA_URL", "/media/")
 								img_url = f"{media_url}{rel.as_posix()}"
 								logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
-							except Exception:
-								# If anything fails, fall back to t.me permalink
-								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-								logger.exception("TG image download failed; using permalink url=%s", img_url)
+						except Exception:
+							# If anything fails, fall back to t.me permalink
+							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+							logger.exception("TG image download failed; using permalink url=%s", img_url)
 						# Final fallback if no local image was produced but message includes a photo entity
 						if not use_generated_image and ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
