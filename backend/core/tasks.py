@@ -768,21 +768,21 @@ def fetch_telegram_channels() -> dict:
 											saved_path = new_path
 									except Exception:
 										pass
-								media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-								# Compress if exceeds limits
-								try:
-									cfg2 = ParserConfig.objects.order_by("-updated_at").first()
-									_compress_image_at_path(saved_path, cfg2)
-								except Exception:
-									logger.exception("Compress failed")
-								rel = saved_path.relative_to(media_root)
-								media_url = getattr(settings, "MEDIA_URL", "/media/")
-								img_url = f"{media_url}{rel.as_posix()}"
-								logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
-						except Exception:
-							# If anything fails, fall back to t.me permalink
-							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
-							logger.exception("TG image download failed; using permalink url=%s", img_url)
+									media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+									# Compress if exceeds limits
+									try:
+										cfg2 = ParserConfig.objects.order_by("-updated_at").first()
+										_compress_image_at_path(saved_path, cfg2)
+									except Exception:
+										logger.exception("Compress failed")
+									rel = saved_path.relative_to(media_root)
+									media_url = getattr(settings, "MEDIA_URL", "/media/")
+									img_url = f"{media_url}{rel.as_posix()}"
+									logger.info("TG image saved path=%s url=%s", str(saved_path), img_url)
+							except Exception:
+								# If anything fails, fall back to t.me permalink
+								img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
+								logger.exception("TG image download failed; using permalink url=%s", img_url)
 						# Final fallback if no local image was produced but message includes a photo entity
 						if not use_generated_image and ch.parse_images and (not img_url) and MessageMediaPhoto and getattr(m, "media", None) and isinstance(m.media, MessageMediaPhoto):
 							img_url = f"https://t.me/{ch.username.lstrip('@')}/{m.id}?single"
