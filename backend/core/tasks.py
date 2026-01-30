@@ -457,6 +457,8 @@ def deliver_outbox() -> dict:
 
 	delivered = 0
 	skipped = 0
+	# Track which news item IDs we've already sent this run to avoid duplicates
+	sent_news_ids = set()
 	for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
 		try:
 			ok = False
@@ -465,8 +467,22 @@ def deliver_outbox() -> dict:
 			try:
 				if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
 					pl = event.payload or {}
-					if not pl.get("id"):
+					nid = pl.get("id")
+					if not nid:
 						event.delivery_attempts += 1
+						event.mark_delivered()
+						skipped += 1
+						continue
+					# Check if another event for the same news ID was already delivered
+					already_delivered = OutboxEvent.objects.filter(
+						event_type=OutboxEvent.EVENT_NEWS_CREATED,
+						delivered_at__isnull=False,
+						payload__id=nid,
+					).exclude(pk=event.pk).exists()
+					if already_delivered or nid in sent_news_ids:
+						# Mark as delivered without sending (duplicate)
+						event.delivery_attempts += 1
+						event.last_error = "Duplicate - already sent"
 						event.mark_delivered()
 						skipped += 1
 						continue
@@ -630,6 +646,14 @@ def deliver_outbox() -> dict:
 				event.delivery_attempts += 1
 				event.mark_delivered()
 				delivered += 1
+				# Track sent news ID to avoid duplicates within this run
+				try:
+					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
+						nid = (event.payload or {}).get("id")
+						if nid:
+							sent_news_ids.add(nid)
+				except Exception:
+					pass
 			else:
 				event.delivery_attempts += 1
 				event.last_error = last_err or ("Webhook failed" if webhook_url else "Delivery failed")

@@ -30,6 +30,12 @@ def enqueue_outbox(event_type: str, payload: Dict) -> None:
 def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 	if not created:
 		return
+	# Prevent duplicate outbox events for the same news item
+	if OutboxEvent.objects.filter(
+		event_type=OutboxEvent.EVENT_NEWS_CREATED,
+		payload__id=instance.pk,
+	).exists():
+		return
 	img = instance.image_url or ""
 	if not img:
 		try:
@@ -50,6 +56,12 @@ def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 @receiver(post_save, sender=AuthorColumn)
 def on_authorcolumn_created(sender, instance: AuthorColumn, created: bool, **kwargs):
 	if not created:
+		return
+	# Prevent duplicate outbox events for the same column
+	if OutboxEvent.objects.filter(
+		event_type=OutboxEvent.EVENT_COLUMN_CREATED,
+		payload__id=instance.pk,
+	).exists():
 		return
 	img = instance.image_url or ""
 	if not img:
