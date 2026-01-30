@@ -457,16 +457,8 @@ def deliver_outbox() -> dict:
 
 	delivered = 0
 	skipped = 0
-	while True:
-		with transaction.atomic():
-			event = (OutboxEvent.objects
-				.select_for_update(skip_locked=True)
-				.filter(delivered_at__isnull=True)
-				.order_by("created_at")
-				.first())
-			if not event:
-				break
-			try:
+	for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
+		try:
 			ok = False
 			last_err = ""
 			# Drop legacy events without id (pre-payload schema) to avoid infinite retries
@@ -634,20 +626,20 @@ def deliver_outbox() -> dict:
 				except Exception as _tg_exc:
 					ok = False
 					last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
-				if ok:
-					event.delivery_attempts += 1
-					event.mark_delivered()
-					delivered += 1
-				else:
-					event.delivery_attempts += 1
-					event.last_error = last_err or ("Webhook failed" if webhook_url else "Delivery failed")
-					event.save(update_fields=["delivery_attempts", "last_error"])
-					skipped += 1
-			except Exception as exc:
+			if ok:
 				event.delivery_attempts += 1
-				event.last_error = str(exc)[:500]
+				event.mark_delivered()
+				delivered += 1
+			else:
+				event.delivery_attempts += 1
+				event.last_error = last_err or ("Webhook failed" if webhook_url else "Delivery failed")
 				event.save(update_fields=["delivery_attempts", "last_error"])
 				skipped += 1
+		except Exception as exc:
+			event.delivery_attempts += 1
+			event.last_error = str(exc)[:500]
+			event.save(update_fields=["delivery_attempts", "last_error"])
+			skipped += 1
 	return {"delivered": delivered, "skipped": skipped}
 
 
