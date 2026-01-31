@@ -142,7 +142,6 @@ def run_full_diagnostic(
                         {"role": "system", "content": prompt},
                         {"role": "user", "content": f"Title: {test_title}\n\nContent: {test_content}"},
                     ],
-                    max_completion_tokens=cfg.max_output_tokens,
                 )
                 raw = response.choices[0].message.content or ""
                 step_rewrite.raw_response = raw[:2000]
@@ -193,7 +192,6 @@ def run_full_diagnostic(
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": f"Title: {rewritten_title}\n\nContent: {rewritten_content}"},
                     ],
-                    max_completion_tokens=2048,
                 )
                 raw = response.choices[0].message.content or ""
                 step_translate.raw_response = raw[:2000]
@@ -249,7 +247,6 @@ def run_full_diagnostic(
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": f"Article Title: {rewritten_title}\n\nArticle Content: {rewritten_content[:1000]}"},
                     ],
-                    max_completion_tokens=200,
                 )
                 generated_prompt = (response.choices[0].message.content or "").strip()
                 step_img_prompt.raw_response = generated_prompt
