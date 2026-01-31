@@ -1,11 +1,8 @@
 from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
-from django.urls import path
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.contrib.admin.views.decorators import staff_member_required
-from django.utils.decorators import method_decorator
 
 from .models import (
 	AuthorColumn,
@@ -369,20 +366,6 @@ class DiagnosticsAdminView:
 		except Exception as e:
 			return JsonResponse({"error": str(e)})
 
-
-# Register custom URLs with the admin site
-original_get_urls = admin.site.get_urls
-
-def custom_admin_urls():
-	custom_urls = [
-		path('diagnostics/', staff_member_required(DiagnosticsAdminView.diagnostics_view), name='system_diagnostics'),
-		path('diagnostics/run/', staff_member_required(DiagnosticsAdminView.run_diagnostics_api), name='run_diagnostics'),
-		path('diagnostics/cleanup-duplicates/', staff_member_required(DiagnosticsAdminView.cleanup_duplicates_api), name='cleanup_duplicates'),
-		path('diagnostics/outbox-details/', staff_member_required(DiagnosticsAdminView.get_outbox_details_api), name='outbox_details'),
-	]
-	return custom_urls + original_get_urls()
-
-admin.site.get_urls = custom_admin_urls
 
 # Customize admin site
 admin.site.site_header = "News Aggregator Admin"
