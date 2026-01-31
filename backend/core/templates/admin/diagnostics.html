@@ -248,6 +248,31 @@
     .tab-content.active {
         display: block;
     }
+    /* Token summary highlight */
+    .step[data-summary="tokens"] .step-header {
+        background: linear-gradient(90deg, var(--primary, #417690) 0%, var(--darkened-bg, #f5f5f5) 30%);
+    }
+    .step[data-summary="tokens"] .step-name {
+        color: var(--primary-fg, #fff);
+    }
+    .token-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .token-card {
+        background: var(--selected-bg, #e9ecef);
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+    .token-card strong {
+        display: block;
+        font-size: 18px;
+        margin-bottom: 5px;
+        color: var(--primary, #417690);
+    }
 </style>
 
 <div class="diagnostics-container">
@@ -349,6 +374,11 @@ function renderResults(data) {
     const results = document.getElementById('results');
     let html = '';
     
+    // Find token summary step
+    const tokenSummary = data.steps.find(s => s.name.includes('Token Usage'));
+    const totalTokens = tokenSummary?.output?.total_tokens || 0;
+    const estimatedCost = tokenSummary?.output?.estimated_cost_usd || 0;
+    
     // Summary
     html += `<div class="summary ${data.overall_status}">
         <strong>Overall Status:</strong> ${data.overall_status.toUpperCase()}
@@ -356,6 +386,7 @@ function renderResults(data) {
         <strong>Total Duration:</strong> ${data.total_duration_ms.toFixed(0)}ms
         &nbsp;|&nbsp;
         <strong>Started:</strong> ${data.started_at}
+        ${totalTokens ? `&nbsp;|&nbsp;<strong>Total Tokens:</strong> ${totalTokens.toLocaleString()} (~$${estimatedCost.toFixed(4)})` : ''}
     </div>`;
     
     // Steps
