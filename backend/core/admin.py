@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django import forms
 from django.conf import settings as dj_settings
+from django.urls import path
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
 
 from .models import (
 	AuthorColumn,
@@ -262,3 +267,124 @@ class AdBannerAdmin(admin.ModelAdmin):
 	search_fields = ("name", "url")
 	fields = ("name", "url", "image", "is_active", "weight", "created_at", "updated_at")
 	actions = (mark_active, mark_inactive)
+
+
+# ----- System Diagnostics Admin View -----
+
+class DiagnosticsAdminView:
+	"""Custom admin view for system diagnostics."""
+	
+	@staticmethod
+	def diagnostics_view(request):
+		"""Render the diagnostics page."""
+		return render(request, "admin/diagnostics.html", {
+			"title": "System Diagnostics",
+			"site_header": admin.site.site_header,
+			"site_title": admin.site.site_title,
+		})
+	
+	@staticmethod
+	def run_diagnostics_api(request):
+		"""API endpoint to run diagnostics."""
+		from .diagnostics import run_full_diagnostic
+		
+		test_title = request.GET.get("title", "Test Article: AI Breakthrough in 2024")
+		test_content = request.GET.get("content", "Scientists have developed a revolutionary new algorithm that improves neural network efficiency by 50%.")
+		send_telegram = request.GET.get("send_telegram", "false").lower() == "true"
+		
+		result = run_full_diagnostic(
+			test_title=test_title,
+			test_content=test_content,
+			send_to_telegram=send_telegram,
+		)
+		return JsonResponse(result.to_dict())
+	
+	@staticmethod
+	def cleanup_duplicates_api(request):
+		"""API endpoint to clean up duplicate outbox events."""
+		from django.db.models import Count
+		
+		deleted_count = 0
+		try:
+			dupes = list(OutboxEvent.objects
+				.filter(delivered_at__isnull=True, event_type='news.created')
+				.values('payload__id')
+				.annotate(cnt=Count('id'))
+				.filter(cnt__gt=1))
+			
+			for d in dupes:
+				nid = d['payload__id']
+				events = list(OutboxEvent.objects.filter(
+					delivered_at__isnull=True,
+					event_type='news.created',
+					payload__id=nid
+				).order_by('created_at'))
+				for e in events[1:]:
+					e.delete()
+					deleted_count += 1
+			
+			return JsonResponse({
+				"status": "success",
+				"deleted_count": deleted_count,
+				"duplicate_groups_found": len(dupes),
+			})
+		except Exception as e:
+			return JsonResponse({
+				"status": "error",
+				"error": str(e),
+			})
+	
+	@staticmethod
+	def get_outbox_details_api(request):
+		"""API endpoint to get detailed outbox status."""
+		from django.db.models import Count
+		from django.utils import timezone
+		
+		try:
+			# Pending events
+			pending = list(OutboxEvent.objects.filter(
+				delivered_at__isnull=True
+			).order_by('-created_at')[:20].values(
+				'id', 'event_type', 'created_at', 'delivery_attempts', 'last_error', 'payload'
+			))
+			
+			# Recent delivered
+			delivered = list(OutboxEvent.objects.filter(
+				delivered_at__isnull=False
+			).order_by('-delivered_at')[:20].values(
+				'id', 'event_type', 'created_at', 'delivered_at', 'delivery_attempts', 'payload'
+			))
+			
+			# Format for JSON
+			for item in pending + delivered:
+				if item.get('created_at'):
+					item['created_at'] = item['created_at'].isoformat()
+				if item.get('delivered_at'):
+					item['delivered_at'] = item['delivered_at'].isoformat()
+			
+			return JsonResponse({
+				"pending": pending,
+				"recent_delivered": delivered,
+			})
+		except Exception as e:
+			return JsonResponse({"error": str(e)})
+
+
+# Register custom URLs with the admin site
+original_get_urls = admin.site.get_urls
+
+def custom_admin_urls():
+	custom_urls = [
+		path('diagnostics/', staff_member_required(DiagnosticsAdminView.diagnostics_view), name='system_diagnostics'),
+		path('diagnostics/run/', staff_member_required(DiagnosticsAdminView.run_diagnostics_api), name='run_diagnostics'),
+		path('diagnostics/cleanup-duplicates/', staff_member_required(DiagnosticsAdminView.cleanup_duplicates_api), name='cleanup_duplicates'),
+		path('diagnostics/outbox-details/', staff_member_required(DiagnosticsAdminView.get_outbox_details_api), name='outbox_details'),
+	]
+	return custom_urls + original_get_urls()
+
+admin.site.get_urls = custom_admin_urls
+
+# Customize admin site
+admin.site.site_header = "News Aggregator Admin"
+admin.site.site_title = "News Aggregator"
+admin.site.index_title = "Dashboard"
