@@ -133,13 +133,12 @@ def run_full_diagnostic(
                 step_rewrite.skip("OpenAI API key not configured")
             else:
                 client = OpenAI(api_key=api_key, base_url=base_url, timeout=60)
-                prompt = (cfg.prompt or "Rewrite this article professionally.").format(
-                    title=test_title, content=test_content
-                )
+                # Use prompt as-is (don't use .format() as it may contain literal braces)
+                system_prompt = cfg.prompt or "Rewrite this article professionally. Return JSON with 'title' and 'content' keys."
                 response = client.chat.completions.create(
                     model=cfg.model,
                     messages=[
-                        {"role": "system", "content": prompt},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": f"Title: {test_title}\n\nContent: {test_content}"},
                     ],
                 )
