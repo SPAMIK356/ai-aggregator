@@ -446,225 +446,242 @@ def run_parser() -> dict:
 @shared_task
 def deliver_outbox() -> dict:
 	from .models import OutboxEvent, NewsItem
+	from django.core.cache import cache
+	
+	# Simple lock to prevent concurrent execution
+	lock_id = "deliver_outbox_lock"
+	lock_timeout = 120  # 2 minutes max
+	
+	# Try to acquire lock
+	if not cache.add(lock_id, "locked", lock_timeout):
+		logger.info("deliver_outbox: another instance is running, skipping")
+		return {"delivered": 0, "skipped": 0, "reason": "locked"}
+	
+	try:
+		webhook_url = getattr(settings, "WEBHOOK_URL", "")
+		bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
+		channel = getattr(settings, "TELEGRAM_CHANNEL", "")
+		if not webhook_url:
+			if not (bot_token and channel and Bot):
+				return {"delivered": 0, "skipped": 0, "reason": "no delivery configured"}
 
-	webhook_url = getattr(settings, "WEBHOOK_URL", "")
-	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
-	channel = getattr(settings, "TELEGRAM_CHANNEL", "")
-	if not webhook_url:
-		# If webhook not configured, we can still deliver to Telegram if configured
-		if not (bot_token and channel and Bot):
-			return {"delivered": 0, "skipped": 0, "reason": "no delivery configured"}
-
-	delivered = 0
-	skipped = 0
-	# Track which news item IDs we've already sent this run to avoid duplicates
-	sent_news_ids = set()
-	for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
+		delivered = 0
+		skipped = 0
+		sent_news_ids = set()
+		
+		# Pre-load delivered news IDs
+		delivered_news_ids = set()
 		try:
-			ok = False
-			last_err = ""
-			# Drop legacy events without id (pre-payload schema) to avoid infinite retries
-			try:
-				if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-					pl = event.payload or {}
-					nid = pl.get("id")
-					if not nid:
-						event.delivery_attempts += 1
-						event.mark_delivered()
-						skipped += 1
-						continue
-					# Check if another event for the same news ID was already delivered
-					already_delivered = OutboxEvent.objects.filter(
-						event_type=OutboxEvent.EVENT_NEWS_CREATED,
-						delivered_at__isnull=False,
-						payload__id=nid,
-					).exclude(pk=event.pk).exists()
-					if already_delivered or nid in sent_news_ids:
-						# Mark as delivered without sending (duplicate)
-						event.delivery_attempts += 1
-						event.last_error = "Duplicate - already sent"
-						event.mark_delivered()
-						skipped += 1
-						continue
-			except Exception:
-				pass
-			# Prefer webhook if configured
-			if webhook_url:
-				resp = requests.post(webhook_url, json={
-					"event_type": event.event_type,
-					"payload": event.payload,
-				})
-				ok = 200 <= resp.status_code < 300
-				if not ok:
-					last_err = f"WEBHOOK HTTP {resp.status_code}"
-			# Fallback to Telegram bot
-			if (not ok) and bot_token and channel and Bot:
+			for evt in OutboxEvent.objects.filter(event_type=OutboxEvent.EVENT_NEWS_CREATED, delivered_at__isnull=False).only("payload"):
 				try:
-					bot = Bot(token=bot_token)
-					payload = event.payload or {}
-					t = (payload.get("title") or "New post").strip()
-					body = (payload.get("body") or "").strip()
-					img = (payload.get("image_url") or "").strip()
-
-					# If this is a NewsItem event, re-fetch from DB to get latest data
-					try:
-						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-							nid = payload.get("id")
-							if nid:
-								ni = NewsItem.objects.filter(pk=int(nid)).only("title", "description", "image_url", "image_file", "original_url").first()
-								if ni:
-									t = (ni.title or t).strip()
-									body = (ni.description or body or "").strip()
-									if not img:
-										img = (ni.image_url or "").strip()
-										if not img and getattr(ni, "image_file", None):
-											try:
-												img = ni.image_file.url  # type: ignore[attr-defined]
-											except Exception:
-												img = ""
-					except RuntimeError as _skip:
-						# Mark as delivered to avoid retry loop on skipped items
-						event.delivery_attempts += 1
-						event.mark_delivered()
-						skipped += 1
-						continue
-					except Exception:
-						pass
-					# If image generation is enabled, give it time to finish before delivery
-					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED and should_generate_image():
-						if not img:
-							age_seconds = (timezone.now() - event.created_at).total_seconds()
-							if age_seconds < 300:
-								event.delivery_attempts += 1
-								event.last_error = f"Waiting for generated image ({int(age_seconds)}s)"
-								event.save(update_fields=["delivery_attempts", "last_error"])
-								skipped += 1
-								continue
-					# Optionally rewrite specifically for Telegram if enabled
-					try:
-						from .rewriter import get_active_telegram_config, rewrite_article_tg
-						_tg_cfg = get_active_telegram_config()
-						if _tg_cfg:
-							rew = rewrite_article_tg(t, body)
-							if rew and isinstance(rew, dict):
-								t = (rew.get("title") or t).strip()
-								body = (rew.get("content") or body or "").strip()
-					except Exception:
-						pass
-					# Resolve local image path when possible and build absolute URLs when needed
-					media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-					local_path = ""
-					try:
-						# Prefer direct image_file path when available
-						if "ni" in locals() and getattr(ni, "image_file", None) and getattr(ni.image_file, "path", ""):
-							if os.path.exists(ni.image_file.path):  # type: ignore[attr-defined]
-								local_path = ni.image_file.path  # type: ignore[attr-defined]
-					except Exception:
-						local_path = ""
-					# Map relative MEDIA_URL-based URLs to filesystem paths
-					if not local_path and img:
-						try:
-							from urllib.parse import urlparse
-							p = urlparse(img)
-							if not p.scheme:
-								media_url_prefix = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
-								candidate = None
-								if img.startswith(media_url_prefix):
-									rel = img[len(media_url_prefix):].lstrip("/")
-									candidate = media_root / rel
-								elif img.startswith("/"):
-									candidate = media_root / img.lstrip("/")
-								else:
-									candidate = media_root / img
-								if candidate and candidate.exists():
-									local_path = str(candidate)
-						except Exception:
-							pass
-					# Build absolute URL for Telegram if we only have a relative path
-					try:
-						base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
-						if img and img.startswith("/") and base:
-							img = base.rstrip("/") + img
-					except Exception:
-						pass
-					# Prefer Telegram HTML formatting with safe subset; fallback to plain text.
-					# We assume title is already present in body (rewriter/content),
-					# so we only send body and fall back to title if body is empty.
-					text = (body or t).strip()
-					text_html = _to_telegram_html(text)
-					text_plain = _to_plain_text(text)
-					if local_path:
-						try:
-							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-							with open(local_path, "rb") as f:
-								bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
-							ok = True
-						except Exception:
-							# Fallbacks: try plain caption, then message-only
-							try:
-								with open(local_path, "rb") as f:
-									bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
-								ok = True
-							except Exception:
-								try:
-									pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-									bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
-									ok = True
-								except Exception:
-									bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-									ok = True
-					elif img:
-						try:
-							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-							bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
-							ok = True
-						except Exception:
-							# Fallback to photo+plain caption; if that fails, try message HTML, then plain
-							try:
-								bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
-								ok = True
-							except Exception:
-								try:
-									pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-									bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
-									ok = True
-								except Exception:
-									bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-									ok = True
-					else:
-						try:
-							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-							bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode=pm, disable_web_page_preview=True)
-							ok = True
-						except Exception:
-							bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-							ok = True
-				except Exception as _tg_exc:
-					ok = False
-					last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
-			if ok:
-				event.delivery_attempts += 1
-				event.mark_delivered()
-				delivered += 1
-				# Track sent news ID to avoid duplicates within this run
+					nid = (evt.payload or {}).get("id")
+					if nid:
+						delivered_news_ids.add(int(nid))
+				except (TypeError, ValueError):
+					pass
+		except Exception:
+			pass
+		logger.info("deliver_outbox: %d news IDs already delivered", len(delivered_news_ids))
+	
+		for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
+			try:
+				ok = False
+				last_err = ""
+				# Check for duplicates
 				try:
 					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-						nid = (event.payload or {}).get("id")
-						if nid:
-							sent_news_ids.add(nid)
-				except Exception:
-					pass
-			else:
+						pl = event.payload or {}
+						nid = pl.get("id")
+						if not nid:
+							logger.info("deliver_outbox: skip event %d - no news ID", event.pk)
+							event.delivery_attempts += 1
+							event.mark_delivered()
+							skipped += 1
+							continue
+						nid_int = int(nid)
+						if nid_int in delivered_news_ids or nid_int in sent_news_ids:
+							logger.info("deliver_outbox: skip event %d - news %d already delivered", event.pk, nid_int)
+							event.delivery_attempts += 1
+							event.last_error = "Duplicate - already sent"
+							event.mark_delivered()
+							skipped += 1
+							continue
+				except Exception as e:
+					logger.warning("deliver_outbox: dedup check error event %d: %s", event.pk, e)
+				
+				# Try webhook first
+				if webhook_url:
+					resp = requests.post(webhook_url, json={"event_type": event.event_type, "payload": event.payload})
+					ok = 200 <= resp.status_code < 300
+					if not ok:
+						last_err = f"WEBHOOK HTTP {resp.status_code}"
+				
+				# Fallback to Telegram
+				if (not ok) and bot_token and channel and Bot:
+					try:
+						bot = Bot(token=bot_token)
+						payload = event.payload or {}
+						t = (payload.get("title") or "New post").strip()
+						body = (payload.get("body") or "").strip()
+						img = (payload.get("image_url") or "").strip()
+
+						# Re-fetch from DB for latest data
+						try:
+							if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
+								nid = payload.get("id")
+								if nid:
+									ni = NewsItem.objects.filter(pk=int(nid)).only("title", "description", "image_url", "image_file", "original_url").first()
+									if ni:
+										t = (ni.title or t).strip()
+										body = (ni.description or body or "").strip()
+										if not img:
+											img = (ni.image_url or "").strip()
+											if not img and getattr(ni, "image_file", None):
+												try:
+													img = ni.image_file.url
+												except Exception:
+													img = ""
+						except RuntimeError:
+							event.delivery_attempts += 1
+							event.mark_delivered()
+							skipped += 1
+							continue
+						except Exception:
+							pass
+						
+						# Wait for image generation if enabled
+						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED and should_generate_image():
+							if not img:
+								age_seconds = (timezone.now() - event.created_at).total_seconds()
+								if age_seconds < 300:
+									event.delivery_attempts += 1
+									event.last_error = f"Waiting for generated image ({int(age_seconds)}s)"
+									event.save(update_fields=["delivery_attempts", "last_error"])
+									skipped += 1
+									continue
+						
+						# Telegram rewrite if enabled
+						try:
+							from .rewriter import get_active_telegram_config, rewrite_article_tg
+							_tg_cfg = get_active_telegram_config()
+							if _tg_cfg:
+								rew = rewrite_article_tg(t, body)
+								if rew and isinstance(rew, dict):
+									t = (rew.get("title") or t).strip()
+									body = (rew.get("content") or body or "").strip()
+						except Exception:
+							pass
+						
+						# Resolve local image path
+						media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
+						local_path = ""
+						try:
+							if "ni" in locals() and getattr(ni, "image_file", None) and getattr(ni.image_file, "path", ""):
+								if os.path.exists(ni.image_file.path):
+									local_path = ni.image_file.path
+						except Exception:
+							pass
+						
+						if not local_path and img:
+							try:
+								from urllib.parse import urlparse
+								p = urlparse(img)
+								if not p.scheme:
+									media_url_prefix = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
+									if img.startswith(media_url_prefix):
+										rel = img[len(media_url_prefix):].lstrip("/")
+										candidate = media_root / rel
+									elif img.startswith("/"):
+										candidate = media_root / img.lstrip("/")
+									else:
+										candidate = media_root / img
+									if candidate and candidate.exists():
+										local_path = str(candidate)
+							except Exception:
+								pass
+						
+						# Build absolute URL
+						try:
+							base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
+							if img and img.startswith("/") and base:
+								img = base.rstrip("/") + img
+						except Exception:
+							pass
+						
+						text = (body or t).strip()
+						text_html = _to_telegram_html(text)
+						text_plain = _to_plain_text(text)
+						
+						# Send to Telegram with fallbacks
+						if local_path:
+							try:
+								with open(local_path, "rb") as f:
+									bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode='HTML')
+								ok = True
+							except Exception:
+								try:
+									with open(local_path, "rb") as f:
+										bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
+									ok = True
+								except Exception:
+									try:
+										bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
+										ok = True
+									except Exception:
+										bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
+										ok = True
+						elif img:
+							try:
+								bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode='HTML')
+								ok = True
+							except Exception:
+								try:
+									bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
+									ok = True
+								except Exception:
+									try:
+										bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
+										ok = True
+									except Exception:
+										bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
+										ok = True
+						else:
+							try:
+								bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
+								ok = True
+							except Exception:
+								bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
+								ok = True
+					except Exception as _tg_exc:
+						ok = False
+						last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
+				
+				if ok:
+					event.delivery_attempts += 1
+					event.mark_delivered()
+					delivered += 1
+					try:
+						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
+							nid = (event.payload or {}).get("id")
+							if nid:
+								sent_news_ids.add(int(nid))
+								logger.info("deliver_outbox: delivered event %d for news %s", event.pk, nid)
+					except Exception:
+						pass
+				else:
+					event.delivery_attempts += 1
+					event.last_error = last_err or "Delivery failed"
+					event.save(update_fields=["delivery_attempts", "last_error"])
+					skipped += 1
+			except Exception as exc:
 				event.delivery_attempts += 1
-				event.last_error = last_err or ("Webhook failed" if webhook_url else "Delivery failed")
+				event.last_error = str(exc)[:500]
 				event.save(update_fields=["delivery_attempts", "last_error"])
 				skipped += 1
-		except Exception as exc:
-			event.delivery_attempts += 1
-			event.last_error = str(exc)[:500]
-			event.save(update_fields=["delivery_attempts", "last_error"])
-			skipped += 1
-	return {"delivered": delivered, "skipped": skipped}
+		
+		return {"delivered": delivered, "skipped": skipped}
+	finally:
+		cache.delete(lock_id)
 
 
 @shared_task

@@ -31,11 +31,19 @@ def on_newsitem_created(sender, instance: NewsItem, created: bool, **kwargs):
 	if not created:
 		return
 	# Prevent duplicate outbox events for the same news item
-	if OutboxEvent.objects.filter(
-		event_type=OutboxEvent.EVENT_NEWS_CREATED,
-		payload__id=instance.pk,
-	).exists():
-		return
+	# Check recent events (last 1000) to avoid scanning entire table
+	try:
+		recent_events = OutboxEvent.objects.filter(
+			event_type=OutboxEvent.EVENT_NEWS_CREATED
+		).order_by("-created_at")[:1000]
+		for evt in recent_events:
+			try:
+				if (evt.payload or {}).get("id") == instance.pk:
+					return  # Already have an event for this news item
+			except (TypeError, AttributeError):
+				pass
+	except Exception:
+		pass  # If check fails, proceed with creating event
 	img = instance.image_url or ""
 	if not img:
 		try:
@@ -58,11 +66,18 @@ def on_authorcolumn_created(sender, instance: AuthorColumn, created: bool, **kwa
 	if not created:
 		return
 	# Prevent duplicate outbox events for the same column
-	if OutboxEvent.objects.filter(
-		event_type=OutboxEvent.EVENT_COLUMN_CREATED,
-		payload__id=instance.pk,
-	).exists():
-		return
+	try:
+		recent_events = OutboxEvent.objects.filter(
+			event_type=OutboxEvent.EVENT_COLUMN_CREATED
+		).order_by("-created_at")[:1000]
+		for evt in recent_events:
+			try:
+				if (evt.payload or {}).get("id") == instance.pk:
+					return  # Already have an event for this column
+			except (TypeError, AttributeError):
+				pass
+	except Exception:
+		pass
 	img = instance.image_url or ""
 	if not img:
 		try:
