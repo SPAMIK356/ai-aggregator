@@ -384,6 +384,13 @@ def run_parser() -> dict:
 				logger.info("RSS keyword skip url=%s", link)
 				skipped += 1
 				continue
+			# Check daily post limits FIRST (before expensive AI calls)
+			source_name = source.title or source.url
+			allowed, limit_reason = _check_daily_limits(cfg, source_name)
+			if not allowed:
+				logger.info("RSS %s skip url=%s", limit_reason, link)
+				skipped += 1
+				continue
 			try:
 				with transaction.atomic():
 					# Skip too-short items per admin config
@@ -399,13 +406,6 @@ def run_parser() -> dict:
 							continue
 					except Exception:
 						pass
-					# Check daily post limits
-					source_name = source.title or source.url
-					allowed, limit_reason = _check_daily_limits(cfg, source_name)
-					if not allowed:
-						logger.info("RSS %s skip url=%s", limit_reason, link)
-						skipped += 1
-						continue
 					# Pick theme from source.default_theme (fallback to AI)
 					theme_val = source.default_theme or NewsItem.Theme.AI
 					n = NewsItem.objects.create(
@@ -754,6 +754,13 @@ def fetch_telegram_channels() -> dict:
 						with transaction.atomic():
 							orig_title = (_strip_html_tags(html).split("\n")[0] or raw_text.split("\n")[0] or url)[:200]
 							orig_body = (html or escape(raw_text))[:5000]
+							# Check daily post limits FIRST (before expensive AI calls)
+							tg_source_name = ch.title or ch.username
+							allowed, limit_reason = _check_daily_limits(cfg, tg_source_name)
+							if not allowed:
+								logger.info("TG %s skip url=%s", limit_reason, url)
+								skipped += 1
+								continue
 							# Keyword filter (pre-rewrite)
 							if phrases_lc:
 								full_text = f"{orig_title}\n{orig_body}".lower()
@@ -836,13 +843,6 @@ def fetch_telegram_channels() -> dict:
 								theme_val = t.strip().upper()
 						except Exception:
 							theme_val = None
-						# Check daily post limits
-						tg_source_name = ch.title or ch.username
-						allowed, limit_reason = _check_daily_limits(cfg, tg_source_name)
-						if not allowed:
-							logger.info("TG %s skip url=%s", limit_reason, url)
-							skipped += 1
-							continue
 						n = NewsItem.objects.create(
 							title=(rew.get("title") or orig_title)[:500],
 							original_url=url,
@@ -966,6 +966,12 @@ def fetch_websites() -> dict:
 				desc = _strip_blocked_links(desc)
 				full_body = _strip_blocked_links(full_body)
 
+				# Check daily post limits FIRST (before expensive AI calls)
+				allowed, limit_reason = _check_daily_limits(cfg, ws.name)
+				if not allowed:
+					logger.info("WEB %s skip url=%s", limit_reason, link)
+					skipped += 1
+					continue
 				# Keyword filter (pre-rewrite)
 				if phrases_lc:
 					full_text = f"{title}\n{desc}".lower()
@@ -1046,12 +1052,6 @@ def fetch_websites() -> dict:
 								theme_val = t.strip().upper()
 						except Exception:
 							theme_val = None
-						# Check daily post limits
-						allowed, limit_reason = _check_daily_limits(cfg, ws.name)
-						if not allowed:
-							logger.info("WEB %s skip url=%s", limit_reason, link)
-							skipped += 1
-							continue
 						n = NewsItem.objects.create(
 								title=(rew.get("title") or title or link)[:500],
 								original_url=link,
