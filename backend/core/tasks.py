@@ -168,26 +168,32 @@ def _to_plain_text(value: str) -> str:
 	try:
 		if not value:
 			return ""
-		# Remove code/pre/style blocks entirely
-		text = re.sub(r"<(pre|code|style)[\s\S]*?</\\1>", " ", value, flags=re.I)
-		# Strip remaining HTML tags
-		text = _strip_html_tags(text)
-		# Markdown links: [text](url) -> text
-		text = re.sub(r"\\[([^\\]]+)\\]\\((?:https?://|www\\.)[^\\s)]+\\)", r"\\1", text)
-		# Remove emphasis/code markers: **, __, *, _, `, ```
-		text = re.sub(r"```[\s\S]*?```", " ", text)
-		text = re.sub(r"`+", "", text)
-		text = re.sub(r"\\*\\*|__|\\*|_", "", text)
-		# Remove bare URLs
-		text = re.sub(r"https?://\\S+|www\\.\\S+", "", text)
-		# Decode HTML entities and normalize whitespace
 		import html as _html
+		# Remove code/pre/style blocks entirely
+		text = re.sub(r"<(pre|code|style)[^>]*>[\s\S]*?</\1>", " ", value, flags=re.I)
+		# Remove all HTML tags
+		text = re.sub(r"<[^>]+>", " ", text)
+		# Markdown links: [text](url) -> text
+		text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+		# Remove code blocks
+		text = re.sub(r"```[\s\S]*?```", " ", text)
+		text = re.sub(r"`[^`]+`", " ", text)
+		# Remove emphasis markers: **, __, *, _
+		text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+		text = re.sub(r"__([^_]+)__", r"\1", text)
+		text = re.sub(r"\*([^*]+)\*", r"\1", text)
+		text = re.sub(r"_([^_]+)_", r"\1", text)
+		# Remove bare URLs
+		text = re.sub(r"https?://\S+", "", text)
+		text = re.sub(r"www\.\S+", "", text)
+		# Decode HTML entities and normalize whitespace
 		text = _html.unescape(text)
 		text = re.sub(r"[ \t]+", " ", text)
 		text = re.sub(r"\n{3,}", "\n\n", text)
 		return text.strip()
 	except Exception:
-		return (value or "").strip()
+		# Ultimate fallback - just strip all < > content
+		return re.sub(r"<[^>]*>", "", value or "").strip()
 
 
 def _to_telegram_html(value: str) -> str:
@@ -447,6 +453,7 @@ def run_parser() -> dict:
 def deliver_outbox() -> dict:
 	from .models import OutboxEvent, NewsItem
 	from django.core.cache import cache
+	from django.db import transaction
 	
 	# Simple lock to prevent concurrent execution
 	lock_id = "deliver_outbox_lock"
@@ -467,47 +474,76 @@ def deliver_outbox() -> dict:
 
 		delivered = 0
 		skipped = 0
-		sent_news_ids = set()
+		sent_news_ids = set()  # Track IDs sent in THIS run
 		
-		# Pre-load delivered news IDs
+		# Pre-load recently delivered news IDs (last 7 days only for efficiency)
 		delivered_news_ids = set()
 		try:
-			for evt in OutboxEvent.objects.filter(event_type=OutboxEvent.EVENT_NEWS_CREATED, delivered_at__isnull=False).only("payload"):
+			seven_days_ago = timezone.now() - timezone.timedelta(days=7)
+			for evt in OutboxEvent.objects.filter(
+				event_type=OutboxEvent.EVENT_NEWS_CREATED, 
+				delivered_at__isnull=False,
+				delivered_at__gte=seven_days_ago
+			).only("payload"):
 				try:
 					nid = (evt.payload or {}).get("id")
-					if nid:
+					if nid is not None:
 						delivered_news_ids.add(int(nid))
 				except (TypeError, ValueError):
 					pass
-		except Exception:
-			pass
-		logger.info("deliver_outbox: %d news IDs already delivered", len(delivered_news_ids))
+		except Exception as e:
+			logger.warning("deliver_outbox: error loading delivered IDs: %s", e)
+		logger.info("deliver_outbox: %d news IDs delivered in last 7 days", len(delivered_news_ids))
 	
-		for event in OutboxEvent.objects.filter(delivered_at__isnull=True).order_by("created_at")[:100]:
+		# Get pending events
+		pending_events = list(
+			OutboxEvent.objects.filter(delivered_at__isnull=True)
+			.order_by("created_at")[:100]
+			.values_list("pk", flat=True)
+		)
+		
+		for event_pk in pending_events:
+			event = None
+			nid_int = None
 			try:
-				ok = False
-				last_err = ""
-				# Check for duplicates
-				try:
+				# Re-fetch with lock to prevent race conditions
+				# Mark as "in progress" immediately to prevent other workers from picking it up
+				with transaction.atomic():
+					try:
+						event = OutboxEvent.objects.select_for_update(skip_locked=True).get(
+							pk=event_pk, delivered_at__isnull=True
+						)
+					except OutboxEvent.DoesNotExist:
+						# Already processed by another worker
+						logger.debug("deliver_outbox: event %d already processed", event_pk)
+						continue
+					
+					# Immediately increment attempts to "claim" this event
+					event.delivery_attempts += 1
+					event.last_error = "Processing..."
+					event.save(update_fields=["delivery_attempts", "last_error"])
+					
+					# Check for duplicates
 					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
 						pl = event.payload or {}
 						nid = pl.get("id")
-						if not nid:
-							logger.info("deliver_outbox: skip event %d - no news ID", event.pk)
-							event.delivery_attempts += 1
+						if nid is None:
+							logger.info("deliver_outbox: skip event %d - no news ID in payload", event.pk)
+							event.last_error = "No news ID in payload"
 							event.mark_delivered()
 							skipped += 1
 							continue
 						nid_int = int(nid)
 						if nid_int in delivered_news_ids or nid_int in sent_news_ids:
 							logger.info("deliver_outbox: skip event %d - news %d already delivered", event.pk, nid_int)
-							event.delivery_attempts += 1
 							event.last_error = "Duplicate - already sent"
 							event.mark_delivered()
 							skipped += 1
 							continue
-				except Exception as e:
-					logger.warning("deliver_outbox: dedup check error event %d: %s", event.pk, e)
+				
+				# Event is now claimed - continue processing outside transaction
+				ok = False
+				last_err = ""
 				
 				# Try webhook first
 				if webhook_url:
@@ -612,71 +648,80 @@ def deliver_outbox() -> dict:
 						text_html = _to_telegram_html(text)
 						text_plain = _to_plain_text(text)
 						
-						# Send to Telegram with fallbacks
+						# Helper to send with HTML first, then plain text fallback
+						def send_to_tg(send_func, html_text, plain_text, is_caption=False):
+							max_len = 1024 if is_caption else 4096
+							try:
+								send_func(html_text[:max_len], parse_mode='HTML')
+								return True
+							except Exception as html_err:
+								logger.debug("TG HTML failed: %s, falling back to plain", html_err)
+								try:
+									send_func(plain_text[:max_len], parse_mode=None)
+									return True
+								except Exception as plain_err:
+									logger.warning("TG plain also failed: %s", plain_err)
+									raise plain_err
+						
+						# Send to Telegram with proper fallbacks
 						if local_path:
 							try:
 								with open(local_path, "rb") as f:
-									bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode='HTML')
+									send_to_tg(
+										lambda txt, **kw: bot.send_photo(chat_id=channel, photo=f, caption=txt, **kw),
+										text_html, text_plain, is_caption=True
+									)
 								ok = True
-							except Exception:
-								try:
-									with open(local_path, "rb") as f:
-										bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
-									ok = True
-								except Exception:
-									try:
-										bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
-										ok = True
-									except Exception:
-										bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-										ok = True
+							except Exception as photo_err:
+								logger.debug("TG photo send failed: %s, trying text only", photo_err)
+								send_to_tg(
+									lambda txt, **kw: bot.send_message(chat_id=channel, text=txt, disable_web_page_preview=True, **kw),
+									text_html, text_plain
+								)
+								ok = True
 						elif img:
 							try:
-								bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode='HTML')
+								send_to_tg(
+									lambda txt, **kw: bot.send_photo(chat_id=channel, photo=img, caption=txt, **kw),
+									text_html, text_plain, is_caption=True
+								)
 								ok = True
-							except Exception:
-								try:
-									bot.send_photo(chat_id=channel, photo=img, caption=text_plain[:1024])
-									ok = True
-								except Exception:
-									try:
-										bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
-										ok = True
-									except Exception:
-										bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-										ok = True
+							except Exception as photo_err:
+								logger.debug("TG photo URL failed: %s, trying text only", photo_err)
+								send_to_tg(
+									lambda txt, **kw: bot.send_message(chat_id=channel, text=txt, disable_web_page_preview=True, **kw),
+									text_html, text_plain
+								)
+								ok = True
 						else:
-							try:
-								bot.send_message(chat_id=channel, text=text_html[:4096], parse_mode='HTML', disable_web_page_preview=True)
-								ok = True
-							except Exception:
-								bot.send_message(chat_id=channel, text=text_plain[:4096], disable_web_page_preview=True)
-								ok = True
+							send_to_tg(
+								lambda txt, **kw: bot.send_message(chat_id=channel, text=txt, disable_web_page_preview=True, **kw),
+								text_html, text_plain
+							)
+							ok = True
 					except Exception as _tg_exc:
 						ok = False
 						last_err = f"TG {type(_tg_exc).__name__}: {str(_tg_exc)[:300]}"
+						logger.warning("deliver_outbox: Telegram error for event %d: %s", event.pk, last_err)
 				
 				if ok:
-					event.delivery_attempts += 1
+					event.last_error = ""
 					event.mark_delivered()
 					delivered += 1
-					try:
-						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-							nid = (event.payload or {}).get("id")
-							if nid:
-								sent_news_ids.add(int(nid))
-								logger.info("deliver_outbox: delivered event %d for news %s", event.pk, nid)
-					except Exception:
-						pass
+					# Track as sent to prevent duplicates in this run
+					if nid_int:
+						sent_news_ids.add(nid_int)
+						logger.info("deliver_outbox: delivered event %d for news %d", event.pk, nid_int)
 				else:
-					event.delivery_attempts += 1
 					event.last_error = last_err or "Delivery failed"
-					event.save(update_fields=["delivery_attempts", "last_error"])
+					event.save(update_fields=["last_error"])
 					skipped += 1
+					logger.warning("deliver_outbox: failed event %d - %s", event.pk, last_err)
 			except Exception as exc:
-				event.delivery_attempts += 1
-				event.last_error = str(exc)[:500]
-				event.save(update_fields=["delivery_attempts", "last_error"])
+				if event:
+					event.last_error = str(exc)[:500]
+					event.save(update_fields=["last_error"])
+				logger.exception("deliver_outbox: exception processing event %d", event_pk)
 				skipped += 1
 		
 		return {"delivered": delivered, "skipped": skipped}
