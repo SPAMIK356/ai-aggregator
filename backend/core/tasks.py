@@ -451,7 +451,7 @@ def run_parser() -> dict:
 
 @shared_task
 def deliver_outbox() -> dict:
-	from .models import OutboxEvent, NewsItem
+	from .models import OutboxEvent, NewsItem, AuthorColumn
 	from django.core.cache import cache
 	from django.db import transaction
 	
@@ -474,26 +474,6 @@ def deliver_outbox() -> dict:
 
 		delivered = 0
 		skipped = 0
-		sent_news_ids = set()  # Track IDs sent in THIS run
-		
-		# Pre-load recently delivered news IDs (last 7 days only for efficiency)
-		delivered_news_ids = set()
-		try:
-			seven_days_ago = timezone.now() - timezone.timedelta(days=7)
-			for evt in OutboxEvent.objects.filter(
-				event_type=OutboxEvent.EVENT_NEWS_CREATED, 
-				delivered_at__isnull=False,
-				delivered_at__gte=seven_days_ago
-			).only("payload"):
-				try:
-					nid = (evt.payload or {}).get("id")
-					if nid is not None:
-						delivered_news_ids.add(int(nid))
-				except (TypeError, ValueError):
-					pass
-		except Exception as e:
-			logger.warning("deliver_outbox: error loading delivered IDs: %s", e)
-		logger.info("deliver_outbox: %d news IDs delivered in last 7 days", len(delivered_news_ids))
 	
 		# Get pending events
 		pending_events = list(
@@ -505,9 +485,11 @@ def deliver_outbox() -> dict:
 		for event_pk in pending_events:
 			event = None
 			nid_int = None
+			news_item = None
+			author_column = None
+			
 			try:
 				# Re-fetch with lock to prevent race conditions
-				# Mark as "in progress" immediately to prevent other workers from picking it up
 				with transaction.atomic():
 					try:
 						event = OutboxEvent.objects.select_for_update(skip_locked=True).get(
@@ -515,7 +497,6 @@ def deliver_outbox() -> dict:
 						)
 					except OutboxEvent.DoesNotExist:
 						# Already processed by another worker
-						logger.debug("deliver_outbox: event %d already processed", event_pk)
 						continue
 					
 					# Immediately increment attempts to "claim" this event
@@ -523,10 +504,11 @@ def deliver_outbox() -> dict:
 					event.last_error = "Processing..."
 					event.save(update_fields=["delivery_attempts", "last_error"])
 					
-					# Check for duplicates
+					# Check if already sent to Telegram using the definitive flag on the model
+					pl = event.payload or {}
+					nid = pl.get("id")
+					
 					if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-						pl = event.payload or {}
-						nid = pl.get("id")
 						if nid is None:
 							logger.info("deliver_outbox: skip event %d - no news ID in payload", event.pk)
 							event.last_error = "No news ID in payload"
@@ -534,9 +516,42 @@ def deliver_outbox() -> dict:
 							skipped += 1
 							continue
 						nid_int = int(nid)
-						if nid_int in delivered_news_ids or nid_int in sent_news_ids:
-							logger.info("deliver_outbox: skip event %d - news %d already delivered", event.pk, nid_int)
-							event.last_error = "Duplicate - already sent"
+						
+						# DEFINITIVE CHECK: Look at telegram_sent_at on the NewsItem itself
+						news_item = NewsItem.objects.filter(pk=nid_int).first()
+						if not news_item:
+							logger.info("deliver_outbox: skip event %d - news %d not found", event.pk, nid_int)
+							event.last_error = "NewsItem not found"
+							event.mark_delivered()
+							skipped += 1
+							continue
+						
+						if news_item.telegram_sent_at is not None:
+							logger.info("deliver_outbox: skip event %d - news %d already sent at %s", 
+								event.pk, nid_int, news_item.telegram_sent_at)
+							event.last_error = f"Already sent at {news_item.telegram_sent_at}"
+							event.mark_delivered()
+							skipped += 1
+							continue
+					
+					elif event.event_type == OutboxEvent.EVENT_COLUMN_CREATED:
+						if nid is None:
+							event.last_error = "No column ID in payload"
+							event.mark_delivered()
+							skipped += 1
+							continue
+						nid_int = int(nid)
+						
+						author_column = AuthorColumn.objects.filter(pk=nid_int).first()
+						if not author_column:
+							event.last_error = "AuthorColumn not found"
+							event.mark_delivered()
+							skipped += 1
+							continue
+						
+						if author_column.telegram_sent_at is not None:
+							logger.info("deliver_outbox: skip event %d - column %d already sent", event.pk, nid_int)
+							event.last_error = f"Already sent at {author_column.telegram_sent_at}"
 							event.mark_delivered()
 							skipped += 1
 							continue
@@ -561,29 +576,27 @@ def deliver_outbox() -> dict:
 						body = (payload.get("body") or "").strip()
 						img = (payload.get("image_url") or "").strip()
 
-						# Re-fetch from DB for latest data
-						try:
-							if event.event_type == OutboxEvent.EVENT_NEWS_CREATED:
-								nid = payload.get("id")
-								if nid:
-									ni = NewsItem.objects.filter(pk=int(nid)).only("title", "description", "image_url", "image_file", "original_url").first()
-									if ni:
-										t = (ni.title or t).strip()
-										body = (ni.description or body or "").strip()
-										if not img:
-											img = (ni.image_url or "").strip()
-											if not img and getattr(ni, "image_file", None):
-												try:
-													img = ni.image_file.url
-												except Exception:
-													img = ""
-						except RuntimeError:
-							event.delivery_attempts += 1
-							event.mark_delivered()
-							skipped += 1
-							continue
-						except Exception:
-							pass
+						# Use already-fetched NewsItem/AuthorColumn for latest data
+						if news_item:
+							t = (news_item.title or t).strip()
+							body = (news_item.description or body or "").strip()
+							if not img:
+								img = (news_item.image_url or "").strip()
+							if not img and getattr(news_item, "image_file", None):
+								try:
+									img = news_item.image_file.url
+								except Exception:
+									pass
+						elif author_column:
+							t = (author_column.title or t).strip()
+							body = (author_column.content_body or body or "").strip()
+							if not img:
+								img = (author_column.image_url or "").strip()
+							if not img and getattr(author_column, "image_file", None):
+								try:
+									img = author_column.image_file.url
+								except Exception:
+									pass
 						
 						# Wait for image generation if enabled
 						if event.event_type == OutboxEvent.EVENT_NEWS_CREATED and should_generate_image():
@@ -611,10 +624,12 @@ def deliver_outbox() -> dict:
 						# Resolve local image path
 						media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
 						local_path = ""
+						item_with_file = news_item or author_column
 						try:
-							if "ni" in locals() and getattr(ni, "image_file", None) and getattr(ni.image_file, "path", ""):
-								if os.path.exists(ni.image_file.path):
-									local_path = ni.image_file.path
+							if item_with_file and getattr(item_with_file, "image_file", None):
+								file_path = getattr(item_with_file.image_file, "path", "")
+								if file_path and os.path.exists(file_path):
+									local_path = file_path
 						except Exception:
 							pass
 						
@@ -708,10 +723,19 @@ def deliver_outbox() -> dict:
 					event.last_error = ""
 					event.mark_delivered()
 					delivered += 1
-					# Track as sent to prevent duplicates in this run
-					if nid_int:
-						sent_news_ids.add(nid_int)
-						logger.info("deliver_outbox: delivered event %d for news %d", event.pk, nid_int)
+					
+					# MARK AS SENT on the model itself - this is the definitive dedup flag
+					try:
+						if news_item:
+							news_item.telegram_sent_at = timezone.now()
+							news_item.save(update_fields=["telegram_sent_at"])
+							logger.info("deliver_outbox: delivered event %d for news %d", event.pk, nid_int)
+						elif author_column:
+							author_column.telegram_sent_at = timezone.now()
+							author_column.save(update_fields=["telegram_sent_at"])
+							logger.info("deliver_outbox: delivered event %d for column %d", event.pk, nid_int)
+					except Exception as mark_err:
+						logger.warning("deliver_outbox: failed to mark telegram_sent_at: %s", mark_err)
 				else:
 					event.last_error = last_err or "Delivery failed"
 					event.save(update_fields=["last_error"])
@@ -1146,180 +1170,8 @@ def fetch_websites() -> dict:
 	return {"created": created, "skipped": skipped}
 
 
-@shared_task
-def poll_and_post_latest_news(limit: int = 10) -> dict:
-	"""Every run, read last posted NewsItem ID from a file, pull new items, and post to Telegram.
 
-	Uses plain text, no HTML, and posts photos if URLs are present.
-	"""
-	bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
-	channel = getattr(settings, "TELEGRAM_CHANNEL", "")
-	if not (bot_token and channel and Bot):
-		logger.info("TG poll: no telegram configured; skip")
-		return {"posted": 0, "skipped": 0, "reason": "no telegram configured"}
-
-	media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
-	state_dir = media_root / "state"
-	state_dir.mkdir(parents=True, exist_ok=True)
-	state_file = state_dir / "tg_last_posted_id.txt"
-	# Determine current max id in DB to seed checkpoint on first run
-	try:
-		current_max_id = int(NewsItem.objects.order_by("-id").values_list("id", flat=True).first() or 0)
-	except Exception:
-		current_max_id = 0
-
-	last_id = 0
-	seeded = False
-	try:
-		if state_file.exists():
-			val = (state_file.read_text() or "").strip()
-			last_id = int(val) if val else 0
-		else:
-			# Seed: start from current max id so we only post new content going forward
-			state_file.write_text(str(current_max_id))
-			return {"posted": 0, "skipped": 0, "last_id": current_max_id, "seeded": True}
-	except Exception:
-		# If parsing checkpoint failed, reset to current max id to avoid posting old backlog
-		last_id = current_max_id
-		try:
-			state_file.write_text(str(current_max_id))
-		except Exception:
-			pass
-		return {"posted": 0, "skipped": 0, "last_id": current_max_id, "seeded": True}
-
-	qs = NewsItem.objects.order_by("id").filter(id__gt=last_id)[:max(1, int(limit))]
-	posted = 0
-	skipped = 0
-	if not qs:
-		logger.info("TG poll: no new items last_id=%d", last_id)
-		return {"posted": 0, "skipped": 0, "last_id": last_id}
-	bot = Bot(token=bot_token)
-	new_last = last_id
-	for n in qs:
-		try:
-			title = (n.title or "New post").strip()
-			body = (n.description or "").strip()
-			# TG-specific rewrite if enabled
-			try:
-				from .rewriter import get_active_telegram_config, rewrite_article_tg
-				_tg_cfg = get_active_telegram_config()
-				if _tg_cfg:
-					rew = rewrite_article_tg(title, body)
-					if rew and isinstance(rew, dict):
-						title = (rew.get("title") or title).strip()
-						body = (rew.get("content") or body or "").strip()
-			except Exception:
-				pass
-			text_html = _to_telegram_html(f"{title}\n\n{body}")[:4096]
-			text_plain = _to_plain_text(f"{title}\n\n{body}")[:4096]
-			img = (n.image_url or "").strip()
-			# Resolve local file path if available
-			local_path = ""
-			try:
-				if getattr(n, "image_file", None) and getattr(n.image_file, "path", ""):
-					if os.path.exists(n.image_file.path):  # type: ignore[attr-defined]
-						local_path = n.image_file.path  # type: ignore[attr-defined]
-			except Exception:
-				local_path = ""
-			# If URL is relative, map to MEDIA_ROOT correctly (strip MEDIA_URL prefix if present)
-			if not local_path and img:
-				try:
-					from urllib.parse import urlparse
-					p = urlparse(img)
-					if not p.scheme:
-						media_url_prefix = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
-						candidate = None
-						if img.startswith(media_url_prefix):
-							rel = img[len(media_url_prefix):].lstrip("/")
-							candidate = media_root / rel
-						elif img.startswith("/"):
-							candidate = media_root / img.lstrip("/")
-						else:
-							candidate = media_root / img
-						if candidate and candidate.exists():
-							local_path = str(candidate)
-				except Exception:
-					pass
-			# Build absolute URL only if PUBLIC_BASE_URL provided; otherwise keep relative so we try local mapping or file upload
-			try:
-				base = getattr(settings, "PUBLIC_BASE_URL", "").strip()
-				if img and img.startswith("/") and base:
-					img = base.rstrip("/") + img
-			except Exception:
-				pass
-			# Prefer uploading local file when available, else try downloading remote to temp, else send by URL, else text
-			if local_path:
-				try:
-					logger.info("TG poll: sending local image path=%s id=%d", local_path, n.id)
-					with open(local_path, "rb") as f:
-							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-							bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
-					posted += 1
-				except Exception:
-					logger.exception("TG poll: local image send failed id=%d", n.id)
-					# Fallbacks
-					try:
-						with open(local_path, "rb") as f:
-							bot.send_photo(chat_id=channel, photo=f, caption=text_plain[:1024])
-						posted += 1
-					except Exception:
-						try:
-							pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-							bot.send_message(chat_id=channel, text=text_html)
-							posted += 1
-						except Exception:
-							bot.send_message(chat_id=channel, text=text_plain)
-							posted += 1
-			elif img:
-				# Try downloading the remote image so Telegram receives a clean file upload
-				try:
-					logger.info("TG poll: trying remote download url=%s id=%d", img, n.id)
-					resp = requests.get(img, timeout=20, headers={"User-Agent": "Mozilla/5.0 (compatible; ai-aggregator/1.0)"})
-					if resp.status_code == 200 and resp.content:
-						import tempfile
-						with tempfile.NamedTemporaryFile(suffix=".jpg") as tf:
-							tf.write(resp.content)
-							tf.flush()
-							with open(tf.name, "rb") as f:
-								pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-								bot.send_photo(chat_id=channel, photo=f, caption=text_html[:1024], parse_mode=pm)
-								posted += 1
-								new_last = max(new_last, n.id)
-								continue
-				except Exception:
-					logger.exception("TG poll: remote download/send failed url=%s id=%d", img, n.id)
-				try:
-					logger.info("TG poll: sending by URL url=%s id=%d", img, n.id)
-					pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-					bot.send_photo(chat_id=channel, photo=img, caption=text_html[:1024], parse_mode=pm)
-					posted += 1
-				except Exception:
-					logger.exception("TG poll: URL photo send failed url=%s id=%d", img, n.id)
-					# Fallback message: try HTML then plain
-					try:
-						pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-						bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
-						posted += 1
-					except Exception:
-						bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
-						posted += 1
-			else:
-				try:
-					pm = (ParseMode.HTML if 'ParseMode' in globals() and ParseMode else 'HTML')
-					bot.send_message(chat_id=channel, text=text_html, parse_mode=pm, disable_web_page_preview=True)
-					posted += 1
-				except Exception:
-					bot.send_message(chat_id=channel, text=text_plain, disable_web_page_preview=True)
-					posted += 1
-			new_last = max(new_last, n.id)
-		except Exception:
-			skipped += 1
-	try:
-		if new_last > last_id:
-			state_file.write_text(str(new_last))
-	except Exception:
-		pass
-	logger.info("TG poll: done posted=%d skipped=%d last_id=%d", posted, skipped, new_last)
-	return {"posted": posted, "skipped": skipped, "last_id": new_last}
-
+# NOTE: poll_and_post_latest_news has been removed.
+# All Telegram posting now goes through the OutboxEvent system via deliver_outbox().
+# Deduplication is handled by checking telegram_sent_at on NewsItem/AuthorColumn.
 

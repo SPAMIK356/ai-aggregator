@@ -40,6 +40,9 @@ class NewsItem(TimeStampedModel):
 	title_ru = models.CharField(max_length=500, blank=True)
 	description_ru = models.TextField(blank=True)
 
+	# Track Telegram delivery to prevent duplicates
+	telegram_sent_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
 	class Theme(models.TextChoices):
 		AI = "AI", "AI"
 		CRYPTO = "CRYPTO", "CRYPTO"
@@ -64,6 +67,9 @@ class AuthorColumn(TimeStampedModel):
 	# Russian translations (populated during parsing via OpenAI)
 	title_ru = models.CharField(max_length=500, blank=True)
 	content_body_ru = models.TextField(blank=True)
+
+	# Track Telegram delivery to prevent duplicates
+	telegram_sent_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
 	def __str__(self) -> str:
 		return f"{self.title} — {self.author_name}"
