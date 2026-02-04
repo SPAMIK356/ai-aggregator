@@ -517,8 +517,8 @@ def deliver_outbox() -> dict:
 							continue
 						nid_int = int(nid)
 						
-						# DEFINITIVE CHECK: Look at telegram_sent_at on the NewsItem itself
-						news_item = NewsItem.objects.filter(pk=nid_int).first()
+						# ATOMIC CHECK-AND-CLAIM: Use select_for_update + update in one transaction
+						news_item = NewsItem.objects.select_for_update().filter(pk=nid_int).first()
 						if not news_item:
 							logger.info("deliver_outbox: skip event %d - news %d not found", event.pk, nid_int)
 							event.last_error = "NewsItem not found"
@@ -533,6 +533,11 @@ def deliver_outbox() -> dict:
 							event.mark_delivered()
 							skipped += 1
 							continue
+						
+						# CLAIM IT NOW - set telegram_sent_at BEFORE sending to prevent races
+						news_item.telegram_sent_at = timezone.now()
+						news_item.save(update_fields=["telegram_sent_at"])
+						logger.info("deliver_outbox: claimed news %d for sending", nid_int)
 					
 					elif event.event_type == OutboxEvent.EVENT_COLUMN_CREATED:
 						if nid is None:
@@ -542,7 +547,7 @@ def deliver_outbox() -> dict:
 							continue
 						nid_int = int(nid)
 						
-						author_column = AuthorColumn.objects.filter(pk=nid_int).first()
+						author_column = AuthorColumn.objects.select_for_update().filter(pk=nid_int).first()
 						if not author_column:
 							event.last_error = "AuthorColumn not found"
 							event.mark_delivered()
@@ -555,6 +560,10 @@ def deliver_outbox() -> dict:
 							event.mark_delivered()
 							skipped += 1
 							continue
+						
+						# CLAIM IT NOW
+						author_column.telegram_sent_at = timezone.now()
+						author_column.save(update_fields=["telegram_sent_at"])
 				
 				# Event is now claimed - continue processing outside transaction
 				ok = False
@@ -723,25 +732,35 @@ def deliver_outbox() -> dict:
 					event.last_error = ""
 					event.mark_delivered()
 					delivered += 1
-					
-					# MARK AS SENT on the model itself - this is the definitive dedup flag
+					# telegram_sent_at was already set before sending, just log success
+					logger.info("deliver_outbox: delivered event %d for %s %s", 
+						event.pk, event.event_type, nid_int)
+				else:
+					# FAILED - clear telegram_sent_at so it can be retried
 					try:
 						if news_item:
-							news_item.telegram_sent_at = timezone.now()
+							news_item.telegram_sent_at = None
 							news_item.save(update_fields=["telegram_sent_at"])
-							logger.info("deliver_outbox: delivered event %d for news %d", event.pk, nid_int)
 						elif author_column:
-							author_column.telegram_sent_at = timezone.now()
+							author_column.telegram_sent_at = None
 							author_column.save(update_fields=["telegram_sent_at"])
-							logger.info("deliver_outbox: delivered event %d for column %d", event.pk, nid_int)
-					except Exception as mark_err:
-						logger.warning("deliver_outbox: failed to mark telegram_sent_at: %s", mark_err)
-				else:
+					except Exception:
+						pass
 					event.last_error = last_err or "Delivery failed"
 					event.save(update_fields=["last_error"])
 					skipped += 1
 					logger.warning("deliver_outbox: failed event %d - %s", event.pk, last_err)
 			except Exception as exc:
+				# EXCEPTION - clear telegram_sent_at so it can be retried
+				try:
+					if news_item:
+						news_item.telegram_sent_at = None
+						news_item.save(update_fields=["telegram_sent_at"])
+					elif author_column:
+						author_column.telegram_sent_at = None  
+						author_column.save(update_fields=["telegram_sent_at"])
+				except Exception:
+					pass
 				if event:
 					event.last_error = str(exc)[:500]
 					event.save(update_fields=["last_error"])
