@@ -618,17 +618,30 @@ def deliver_outbox() -> dict:
 									skipped += 1
 									continue
 						
-						# Telegram rewrite if enabled
-						try:
-							from .rewriter import get_active_telegram_config, rewrite_article_tg
-							_tg_cfg = get_active_telegram_config()
-							if _tg_cfg:
-								rew = rewrite_article_tg(t, body)
-								if rew and isinstance(rew, dict):
-									t = (rew.get("title") or t).strip()
-									body = (rew.get("content") or body or "").strip()
-						except Exception:
-							pass
+						# Use pre-translated Russian content if available (saves tokens!)
+						# Only call rewrite_article_tg if no translation exists
+						has_russian_content = False
+						if news_item:
+							if news_item.description_ru and news_item.description_ru.strip():
+								# Use already-translated content instead of calling AI again
+								body = news_item.description_ru.strip()
+								if news_item.title_ru and news_item.title_ru.strip():
+									t = news_item.title_ru.strip()
+								has_russian_content = True
+								logger.debug("deliver_outbox: using cached description_ru for news %d", nid_int)
+						
+						# Only call TG rewriter if no Russian content AND TG rewrite is enabled
+						if not has_russian_content:
+							try:
+								from .rewriter import get_active_telegram_config, rewrite_article_tg
+								_tg_cfg = get_active_telegram_config()
+								if _tg_cfg:
+									rew = rewrite_article_tg(t, body)
+									if rew and isinstance(rew, dict):
+										t = (rew.get("title") or t).strip()
+										body = (rew.get("content") or body or "").strip()
+							except Exception:
+								pass
 						
 						# Resolve local image path
 						media_root = Path(getattr(settings, "MEDIA_ROOT", Path("media")))
@@ -856,6 +869,12 @@ def fetch_telegram_channels() -> dict:
 									logger.info("TG keyword skip url=%s", url)
 									skipped += 1
 									continue
+							# Skip too-short per config BEFORE AI calls (saves tokens!)
+							orig_text_len = len(_strip_html_tags(orig_body) or orig_body)
+							if min_chars and orig_text_len < min_chars:
+								logger.info("TG min_chars skip url=%s len=%d min=%d", url, orig_text_len, min_chars)
+								skipped += 1
+								continue
 							# Rewrite with AI (best-effort)
 							try:
 								rew = rewrite_article(orig_title, orig_body)
@@ -863,12 +882,7 @@ def fetch_telegram_channels() -> dict:
 								rew = None
 							if not rew:
 								rew = {"title": orig_title, "content": orig_body}
-							# Skip too-short per config (check rewritten/body)
 							effective_body = (rew.get("content") or orig_body) or ""
-							if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
-								logger.info("TG min_chars skip url=%s len=%d min=%d", url, len((_strip_html_tags(effective_body) or effective_body)), min_chars)
-								skipped += 1
-								continue
 							# AI ad classifier (best-effort) after length/keyword checks
 							try:
 								flag = is_ad_content(rew.get("title") or orig_title, effective_body)
@@ -1067,6 +1081,13 @@ def fetch_websites() -> dict:
 						logger.info("WEB keyword skip url=%s", link)
 						skipped += 1
 						continue
+				# Skip too-short per config BEFORE AI calls (saves tokens!)
+				orig_text = full_body or desc or ""
+				orig_text_len = len(_strip_html_tags(orig_text) or orig_text)
+				if min_chars and orig_text_len < min_chars:
+					logger.info("WEB min_chars skip url=%s len=%d min=%d", link, orig_text_len, min_chars)
+					skipped += 1
+					continue
 				try:
 					with transaction.atomic():
 						try:
@@ -1075,11 +1096,7 @@ def fetch_websites() -> dict:
 							rew = None
 						if not rew:
 							rew = {"title": title or link, "content": (full_body or desc or "")}
-						# Skip too-short per config
 						effective_body = (rew.get("content") or full_body or desc or "")
-						if min_chars and len((_strip_html_tags(effective_body) or effective_body)) < min_chars:
-							skipped += 1
-							continue
 						# AI ad classifier (best-effort) after length/keyword checks
 						try:
 							flag = is_ad_content(rew.get("title") or title or link, effective_body)
