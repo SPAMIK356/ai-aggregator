@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import './globals.css';
 
 // Dynamic import with SSR disabled to avoid hydration issues with localStorage/window
-const CookieConsent = dynamic(() => import('@/components/CookieConsent'), {
+const CookieConsent = dynamic(() => import('../components/CookieConsent'), {
 	ssr: false,
 });
 
