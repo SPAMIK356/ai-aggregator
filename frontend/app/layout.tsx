@@ -1,5 +1,6 @@
 import React from 'react';
 import './globals.css';
+import CookieConsent from '@/components/CookieConsent';
 
 export const metadata = {
 	title: '2049.news',
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="en">
 			<body>
 				{children}
+				<CookieConsent />
 			</body>
 		</html>
 	);

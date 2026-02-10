@@ -10,6 +10,7 @@ export type Dictionary = {
   sections: { news: string; blogs: string };
   footer: { about: string };
   common: { readMore: string; loading: string; noResults: string };
+  cookies: { title: string; description: string; privacy: string; accept: string };
 };
 
 const dictionaries: Record<Locale, () => Promise<Dictionary>> = {

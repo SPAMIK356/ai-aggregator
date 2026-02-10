@@ -31,6 +31,12 @@
     "readMore": "Read more",
     "loading": "Loading...",
     "noResults": "No results found"
+  },
+  "cookies": {
+    "title": "We use cookies",
+    "description": "This site uses cookies to enhance your browsing experience and analyze traffic. By clicking \"Accept\", you consent to our use of cookies.",
+    "privacy": "Privacy Policy",
+    "accept": "Accept"
   }
 }
 
