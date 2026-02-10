@@ -30,15 +30,24 @@ export default function CookieConsent() {
 	const [locale, setLocale] = useState<Locale>('en');
 
 	useEffect(() => {
+		// Safety check for SSR
+		if (typeof window === 'undefined') return;
+
 		// Detect locale from URL path
 		const path = window.location.pathname;
 		const detectedLocale: Locale = path.startsWith('/ru') ? 'ru' : 'en';
 		setLocale(detectedLocale);
 
 		// Check if user has already accepted cookies
-		const accepted = localStorage.getItem(COOKIE_CONSENT_KEY);
-		if (!accepted) {
-			// Small delay for smoother page load
+		try {
+			const accepted = localStorage.getItem(COOKIE_CONSENT_KEY);
+			if (!accepted) {
+				// Small delay for smoother page load
+				const timer = setTimeout(() => setVisible(true), 800);
+				return () => clearTimeout(timer);
+			}
+		} catch {
+			// localStorage might be unavailable (e.g., private browsing)
 			const timer = setTimeout(() => setVisible(true), 800);
 			return () => clearTimeout(timer);
 		}
@@ -46,7 +55,11 @@ export default function CookieConsent() {
 
 	const handleAccept = () => {
 		setClosing(true);
-		localStorage.setItem(COOKIE_CONSENT_KEY, 'true');
+		try {
+			localStorage.setItem(COOKIE_CONSENT_KEY, 'true');
+		} catch {
+			// localStorage might be unavailable
+		}
 		// Wait for animation to complete before hiding
 		setTimeout(() => setVisible(false), 300);
 	};
