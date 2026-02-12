@@ -7,214 +7,167 @@ export default function TermsPage() {
 		<article className="prose">
   <header>
     <h1>Terms of Use</h1>
-    <div>Last Updated: 26.01.2026</div>
+    <div>Last Updated: February 4, 2026</div>
     <hr/>
   </header>
 
-  <p>Please read these Terms of Service ("Terms") carefully before using the website www.2049.news ("Website") and the services provided by 2049.NEWS ("Company", "we", "us", or "our"). By accessing or using our Website, you acknowledge that you have read, understood, and agree to be bound by these Terms.</p>
+  <p>Welcome to 2049.news ("Website"). By accessing or using www.2049.news, you agree to these Terms of Use ("Terms"). If you do not agree, please do not use the Website.</p>
+  <p>These Terms apply to all visitors, users, and others who access or use the Website. Your use of the Website is also subject to our <a href="/privacy">Privacy Policy</a> (including the Cookie Policy section).</p>
 
   <section>
     <div>
-      <h2>1. Acceptance of Terms</h2>
-      <p>By accessing or using the Website, and by receiving consulting or other services provided by the Company, you agree to comply with and be bound by these Terms. If you do not agree with any part of the Terms, you are not permitted to use the Website or our services.</p>
-      <p>These Terms constitute a legally binding agreement between you and 2049.NEWS. Your continued use of the Website following any changes to these Terms constitutes acceptance of those changes.</p>
+      <h2>1. Use of Website</h2>
+      <p>2049.news provides news, analysis, opinion columns, and informational materials about technology, artificial intelligence, and the crypto economy. The content is for general informational purposes only and does not constitute professional, legal, financial, or investment advice.</p>
     </div>
   </section>
 
   <section>
     <div>
       <h2>2. Eligibility</h2>
-      <p>You must be at least 16 years of age to use this Website. By using the Website, you represent and warrant that you meet this age requirement. If you are under 18, you represent that you have your parent's or guardian's permission to use the Website and that they have agreed to these Terms on your behalf.</p>
+      <p>You must be at least 18 years old to use the Website. By using the Website, you confirm that you are at least 18 years old and have the legal capacity to enter into these Terms.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>3. Description of Services</h2>
-      <p>2049.NEWS provides informational and analytical services related to technology, artificial intelligence, cryptocurrency, and global innovation trends. Our services include, but are not limited to:</p>
+      <h2>3. Acceptable Use</h2>
+      <p>You agree not to:</p>
       <ul>
-        <li>Publication of news articles, analytical materials, and opinion pieces</li>
-        <li>Expert commentary, interviews, and industry insights</li>
-        <li>Media content including text, images, videos, and infographics</li>
-        <li>Newsletter and email distribution services</li>
-        <li>Social media content and community engagement</li>
-        <li>Collaboration and partnership opportunities for content creators</li>
-        <li>Advertising and sponsored content placements</li>
-      </ul>
-      <p>We reserve the right to modify, suspend, or discontinue any aspect of our services at any time without prior notice.</p>
-    </div>
-  </section>
-
-  <section>
-    <div>
-      <h2>4. User Conduct and Acceptable Use</h2>
-      <p>When using our Website, you agree not to:</p>
-      <ul>
-        <li>Violate any applicable local, national, or international law or regulation</li>
-        <li>Infringe upon the intellectual property rights of the Company or any third party</li>
-        <li>Transmit any material that is defamatory, offensive, hateful, or otherwise objectionable</li>
-        <li>Attempt to gain unauthorized access to our systems, servers, or databases</li>
-        <li>Use automated systems, bots, or scripts to access or scrape the Website without permission</li>
-        <li>Interfere with or disrupt the integrity or performance of the Website</li>
-        <li>Collect or harvest any personally identifiable information from other users</li>
-        <li>Impersonate any person or entity or misrepresent your affiliation with any person or entity</li>
-        <li>Engage in any activity that could damage, disable, or impair the Website</li>
-        <li>Use the Website for any commercial purposes without our express written consent</li>
+        <li>Use the Website for any illegal or unauthorized purpose;</li>
+        <li>Attempt to gain unauthorized access to the Website, servers, or networks;</li>
+        <li>Interfere with or disrupt the Website or the security of the Website;</li>
+        <li>Upload or transmit viruses, malware, or any harmful code;</li>
+        <li>Scrape, crawl, or harvest data from the Website in a way that harms performance or violates applicable law.</li>
       </ul>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>5. User-Generated Content</h2>
-      <p>Certain areas of the Website may allow users to submit comments, feedback, or other content ("User Content"). By submitting User Content, you:</p>
-      <ul>
-        <li>Grant us a non-exclusive, royalty-free, perpetual, irrevocable, and fully sublicensable right to use, reproduce, modify, adapt, publish, translate, distribute, and display such content worldwide</li>
-        <li>Represent and warrant that you own or have the necessary rights to submit the content</li>
-        <li>Agree that your content does not violate any third-party rights or applicable laws</li>
-      </ul>
-      <p>We reserve the right to remove, edit, or refuse to publish any User Content at our sole discretion without notice or explanation. We do not endorse any User Content and expressly disclaim any liability related to User Content.</p>
+      <h2>4. Intellectual Property</h2>
+      <p>All content on the Website, including text, logos, images, design elements, and other materials, is the property of 2049.news or its content contributors and is protected by applicable intellectual property laws.</p>
+      <p>You may view, share links to, and print content for personal, non-commercial use. You may not reproduce, modify, distribute, sell, or create derivative works from the Website content without prior written permission, except where explicitly allowed by law.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>6. Intellectual Property Rights</h2>
-      <p>All content on the Website, including but not limited to text, graphics, logos, icons, images, audio clips, video clips, data compilations, software, and their arrangement (collectively, "Content"), is the exclusive property of 2049.NEWS or our content suppliers and is protected by international copyright, trademark, and other intellectual property laws.</p>
-      <p>You may:</p>
-      <ul>
-        <li>View, download, and print Content for your personal, non-commercial use only</li>
-        <li>Share links to our articles on social media platforms</li>
-        <li>Quote brief excerpts with proper attribution and a link to the original article</li>
-      </ul>
-      <p>You may not:</p>
-      <ul>
-        <li>Reproduce, distribute, or republish our Content without written permission</li>
-        <li>Modify, create derivative works from, or reverse engineer any Content</li>
-        <li>Use our trademarks, logos, or branding without explicit authorization</li>
-        <li>Remove any copyright, trademark, or other proprietary notices</li>
-        <li>Use Content for commercial purposes or in any way that suggests endorsement by 2049.NEWS</li>
-      </ul>
+      <h2>5. User Submissions</h2>
+      <p>If you submit materials (such as article drafts, comments, or messages), you represent that you have the right to submit them and that they do not violate any third-party rights or laws.</p>
+      <p>By submitting content to us for publication or review, you grant 2049.news a non-exclusive, worldwide, royalty-free license to use, reproduce, publish, and display that content for editorial and promotional purposes in connection with the Website, unless you agree otherwise in writing.</p>
+      <p>We may edit submissions for grammar, clarity, formatting, and structure without changing meaning.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>7. Third-Party Links and Content</h2>
-      <p>Our Website may contain links to third-party websites, services, or content that are not owned or controlled by 2049.NEWS. We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party websites or services.</p>
-      <p>The inclusion of any link does not imply endorsement, approval, or recommendation by us. You access third-party websites at your own risk and should review their terms and privacy policies before use.</p>
-      <p>We may also display content from third-party sources, including news agencies, wire services, and partner publications. Such content remains the property of its respective owners.</p>
+      <h2>6. Third-Party Links</h2>
+      <p>The Website may contain links to third-party websites. We do not control these websites and are not responsible for their content, policies, or practices. Accessing third-party links is at your own risk.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>8. Disclaimer of Warranties</h2>
-      <p>THE WEBSITE AND ALL CONTENT, MATERIALS, INFORMATION, AND SERVICES PROVIDED ON THE WEBSITE ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED.</p>
-      <p>To the fullest extent permitted by applicable law, we disclaim all warranties, express or implied, including but not limited to:</p>
+      <h2>7. Disclaimer of Warranties</h2>
+      <p>The Website and its content are provided "as is" and "as available." We do not guarantee that:</p>
       <ul>
-        <li>Implied warranties of merchantability, fitness for a particular purpose, and non-infringement</li>
-        <li>Warranties regarding the accuracy, reliability, completeness, or timeliness of any content</li>
-        <li>Warranties that the Website will be uninterrupted, secure, or error-free</li>
-        <li>Warranties regarding the results that may be obtained from use of the Website</li>
+        <li>The Website will be uninterrupted, secure, or error-free;</li>
+        <li>The content will be accurate, complete, or current at all times.</li>
       </ul>
-      <p>2049.NEWS does not provide any form of legal, financial, investment, immigration, or professional advice. All materials on the Website are for informational and educational purposes only. You should consult qualified professionals before making any decisions based on information found on the Website.</p>
+      <p>To the fullest extent permitted by law, we disclaim all warranties, express or implied, including implied warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>9. Limitation of Liability</h2>
-      <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL 2049.NEWS, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION:</p>
+      <h2>8. Limitation of Liability</h2>
+      <p>To the fullest extent permitted by law, 2049.news and its owners, employees, contributors, and partners will not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising from:</p>
       <ul>
-        <li>Loss of profits, data, use, goodwill, or other intangible losses</li>
-        <li>Damages resulting from unauthorized access to or use of our servers</li>
-        <li>Damages resulting from any interruption or cessation of transmission to or from the Website</li>
-        <li>Damages resulting from any bugs, viruses, or similar harmful code transmitted through the Website</li>
-        <li>Damages resulting from any errors or omissions in any Content</li>
+        <li>Your access to or use of the Website;</li>
+        <li>Your reliance on any content on the Website;</li>
+        <li>Any unauthorized access to or alteration of your transmissions or data.</li>
       </ul>
-      <p>Our total liability to you for any claims arising from or relating to these Terms or your use of the Website shall not exceed the amount you paid to us, if any, during the twelve (12) months preceding the claim.</p>
+      <p>If liability cannot be excluded by law, it will be limited to the maximum extent permitted.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>10. Indemnification</h2>
-      <p>You agree to defend, indemnify, and hold harmless 2049.NEWS and its officers, directors, employees, contractors, agents, licensors, and suppliers from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising out of or relating to:</p>
+      <h2>9. Indemnification</h2>
+      <p>You agree to indemnify and hold harmless 2049.news and its owners, employees, contributors, and partners from any claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising from:</p>
       <ul>
-        <li>Your violation of these Terms</li>
-        <li>Your User Content</li>
-        <li>Your use of the Website</li>
-        <li>Your violation of any rights of a third party</li>
-        <li>Your violation of any applicable laws, rules, or regulations</li>
+        <li>Your use of the Website;</li>
+        <li>Your violation of these Terms;</li>
+        <li>Your violation of any rights of a third party.</li>
       </ul>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>11. Advertising and Sponsored Content</h2>
-      <p>The Website may contain advertisements, sponsored content, and promotional materials from third-party advertisers. These advertisements may be targeted based on content, queries, or other information.</p>
-      <p>We clearly label sponsored content and native advertising in accordance with applicable advertising standards and regulations. The presence of advertising on the Website does not constitute endorsement of the advertised products or services.</p>
-      <p>Your correspondence or business dealings with advertisers found on the Website are solely between you and such advertisers. We shall not be responsible for any loss or damage incurred as a result of such dealings.</p>
+      <h2>10. Changes to the Website</h2>
+      <p>We may change, suspend, or discontinue any part of the Website at any time without notice. We are not liable for any modification, suspension, or discontinuation.</p>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>11. Advertising, Sponsorships, and Promotions</h2>
+      <p>We may display advertisements, sponsored materials, affiliate links, or other promotions on the Website.</p>
+      <p>Advertising may be contextual and/or based on general factors (such as the content being viewed, approximate location, or device type). If we use advertising technologies that involve "selling" or "sharing" personal information under certain U.S. state privacy laws (including California), we will provide appropriate notices and choices as required.</p>
     </div>
   </section>
 
   <section>
     <div>
       <h2>12. Termination</h2>
-      <p>We may terminate or suspend your access to the Website immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach these Terms.</p>
-      <p>Upon termination, your right to use the Website will immediately cease. All provisions of these Terms which by their nature should survive termination shall survive, including ownership provisions, warranty disclaimers, indemnity, and limitations of liability.</p>
+      <p>We may terminate or restrict your access to the Website at any time if we believe you have violated these Terms or applicable law.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>13. Changes to Terms</h2>
-      <p>We reserve the right to modify or replace these Terms at any time at our sole discretion. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect by posting a notice on the Website.</p>
-      <p>What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Website after any revisions become effective, you agree to be bound by the revised terms.</p>
+      <h2>13. Privacy</h2>
+      <p>Your use of the Website is subject to our <a href="/privacy">Privacy Policy</a>, including information about cookies and how we collect, use, and retain data.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>14. Governing Law and Dispute Resolution</h2>
-      <p>These Terms are governed by and construed in accordance with the laws of the United Arab Emirates and the Emirate of Dubai, without regard to conflict of law principles.</p>
-      <p>Any dispute arising out of or relating to these Terms or the Website shall be resolved through good-faith negotiations. If such negotiations fail, disputes shall be submitted to the exclusive jurisdiction of the courts of Dubai, UAE.</p>
-      <p>You agree that any claim or cause of action arising out of or related to your use of the Website must be filed within one (1) year after such claim or cause of action arose, or be forever barred.</p>
+      <h2>14. Governing Law</h2>
+      <p>These Terms are governed by the laws of the United Arab Emirates (UAE), without regard to conflict of laws principles.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>15. Severability</h2>
-      <p>If any provision of these Terms is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, such provision shall be modified to the minimum extent necessary to make it valid and enforceable, or if modification is not possible, shall be severed from these Terms. The remaining provisions shall continue in full force and effect.</p>
+      <h2>15. Dispute Resolution</h2>
+      <p>If a dispute arises, you agree to attempt to resolve it with us informally first by contacting us. If informal resolution is not possible, disputes will be handled under the applicable laws and procedures of the UAE.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>16. Entire Agreement</h2>
-      <p>These Terms, together with our Privacy Policy and any other legal notices published by us on the Website, constitute the entire agreement between you and 2049.NEWS concerning the Website and supersede all prior or contemporaneous communications and proposals, whether electronic, oral, or written.</p>
+      <h2>16. Severability</h2>
+      <p>If any provision of these Terms is found to be invalid or unenforceable, the remaining provisions will remain in full force and effect.</p>
     </div>
   </section>
 
   <section>
     <div>
-      <h2>17. Waiver</h2>
-      <p>Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights. The waiver of any such right or provision will be effective only if in writing and signed by a duly authorized representative of 2049.NEWS.</p>
+      <h2>17. Entire Agreement</h2>
+      <p>These Terms, together with the Privacy Policy, constitute the entire agreement between you and 2049.news regarding your use of the Website and supersede any prior understandings.</p>
     </div>
   </section>
 
   <section>
     <div>
       <h2>18. Contact Information</h2>
-      <p>If you have any questions about these Terms, please contact us:</p>
+      <p>If you have questions about these Terms, contact us:</p>
       <ul>
         <li><strong>Email:</strong> info@2049.news</li>
         <li><strong>Address:</strong> Unit 2118, JLT, Cluster X, DMCC, Dubai, UAE</li>
       </ul>
-      <p>We will make every effort to respond to your inquiry within a reasonable timeframe.</p>
     </div>
   </section>
 </article>
